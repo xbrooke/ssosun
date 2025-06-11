@@ -8,7 +8,7 @@
     "dev": "pnpm run dev:client",
     "build:client": "vite build --outDir dist/static",
     "build": "rm -rf dist && pnpm run build:client && cp package.json dist && touch dist/build.flag",
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "echo \"建议使用pnpm install安装依赖，如需使用npm请删除此脚本\""
   },
   "dependencies": {
     "clsx": "^2.1.1",
