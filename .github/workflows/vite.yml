@@ -1,3 +1,4 @@
+# .github/workflows/vite.yml
 name: Vite CI
 
 on:
@@ -20,11 +21,10 @@ jobs:
         node-version: '18'
 
     - name: Install dependencies
-      run: pnpm install
-
-    - name: Run build
-      run: pnpm run build
+      run: npm install
 
     - name: Run tests
-      run: pnpm test
-      continue-on-error: true
+      run: npm test
+
+    - name: Build project
+      run: npm run build
