@@ -1,5 +1,20 @@
 # 项目分支管理指南
 
+[![Deploy to GitHub Pages](https://github.com/yourusername/project_template_react/actions/workflows/deploy.yml/badge.svg)](https://github.com/yourusername/project_template_react/actions/workflows/deploy.yml)
+
+## Deployment
+
+This project is automatically deployed to GitHub Pages when pushing to the `main` branch. The deployment status can be viewed above.
+
+To deploy manually:
+
+1. Clone the repository
+2. Install dependencies: `pnpm install`
+3. Build the project: `pnpm run build`
+4. The built files will be in the `dist` directory
+
+
+
 ## 解决分支不显示问题
 
 如果在Git仓库中看不到任何分支，可以按照以下步骤解决：
