@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -6,33 +6,35 @@ on:
   pull_request:
     branches: [ main ]
 
+# ⚠️ 必须开启这些权限，特别是 id-token 和 pages
 permissions:
   id-token: write
   pages: write
-  actions: read
   contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          
+          node-version: '20' # 可根据项目需要修改
+
       - name: Install dependencies
         run: npm install
-      
-      - name: Build
-        run: npm run build
-        
+
+      - name: Build project
+        run: npm run build # 确保 package.json 中配置了 build 脚本
+
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: dist
-      
+          path: dist # 如果你用的是 Vite/React/Vue 等，通常输出目录是 dist；按需修改
+
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v2
