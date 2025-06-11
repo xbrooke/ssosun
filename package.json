@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev:client": "vite --host --port 3000",
-    "dev": "pnpm run dev:client",
+    "dev": "npm run dev:client",
     "build:client": "vite build",
     "build": "vite build",
     "test": "jest",
