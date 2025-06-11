@@ -4,37 +4,31 @@
 /* eslint-env node, jest */
 /* global global */
 
+import { jest } from '@jest/globals';
+// @ts-expect-error Node.js global in browser context
 import '@testing-library/jest-dom';
-import { jest, beforeAll } from '@jest/globals';
 import { TextEncoder, TextDecoder } from 'util';
 
-// @ts-expect-error Node.js global in browser context
+// Node.js globals for browser context
 global.TextEncoder = TextEncoder;
-// @ts-expect-error Node.js global in browser context
 global.TextDecoder = TextDecoder;
 
-
-
-// Mock matchMedia with full MediaQueryList implementation
+// Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
-    matches: query.includes('dark'), // mock prefers dark mode
+    matches: query.includes('dark'),
     media: query,
     onchange: null,
-    addListener: jest.fn(), // deprecated but still used in some libs
-    removeListener: jest.fn(), // deprecated
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
     currentTarget: window,
-    // Add missing properties to fully implement MediaQueryList interface
     __proto__: EventTarget.prototype,
   })),
 });
-
-// Remove duplicate mock implementation
-// The mock is already defined above
 
 // Mock localStorage
 const localStorageMock = (function() {

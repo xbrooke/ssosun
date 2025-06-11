@@ -4,6 +4,8 @@
 /* eslint-env node, jest */
 /* global global */
 
+
+import { jest } from '@jest/globals';
 import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
 
