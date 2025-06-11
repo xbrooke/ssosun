@@ -10,7 +10,6 @@
     "build": "rm -rf dist && npm run build:client && cp package.json dist && touch dist/build.flag",
     "test": "jest",
     "test:watch": "jest --watch",
-    "preinstall": "echo \"检测到您正在使用npm install，建议使用pnpm install安装依赖。如需使用npm，请先删除pnpm-lock.yaml文件\" && exit 1",
     "test:ci": "jest --ci --runInBand"
   },
   "dependencies": {
