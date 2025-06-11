@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev:client": "vite --host --port 3000",
-    "dev": "npm run dev:client",
+    "dev": "pnpm run dev:client",
     "build:client": "vite build --outDir dist/static",
-    "build": "rm -rf dist && npm run build:client && cp package.json dist && touch dist/build.flag",
-    "preinstall": "npx only-allow npm"
+    "build": "rm -rf dist && pnpm run build:client && cp package.json dist && touch dist/build.flag",
+    "preinstall": "npx only-allow pnpm"
   },
   "dependencies": {
     "clsx": "^2.1.1",

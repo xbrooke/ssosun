@@ -1,31 +1,38 @@
-# 苹果风应用商店
+# 项目分支管理指南
 
-项目编号: 7513958015814008895
+## 解决分支不显示问题
 
-本项目是由 [网站开发专家](https://space.coze.cn/) 创建.
+如果在Git仓库中看不到任何分支，可以按照以下步骤解决：
 
-[**项目地址**](https://space.coze.cn/task/7513958015814008895)
-
-## 本地开发
-
-### 环境准备
-
-- 安装 [Node.js](https://nodejs.org/en)
-- 安装 [pnpm](https://pnpm.io/installation)
-
-### 操作步骤
-
-- 安装依赖
-
-```sh
-pnpm install
+1. 首先检查本地分支：
+```bash
+git branch
 ```
 
-- 启动 Dev Server
-
-```sh
-pnpm run dev
+2. 如果没有显示任何分支，可以创建新分支：
+```bash
+git checkout -b main  # 创建并切换到main分支
 ```
 
-- 在浏览器访问 http://localhost:3000
+3. 检查远程分支：
+```bash
+git branch -r  # 查看远程分支
+git branch -a  # 查看所有分支(本地+远程)
+```
 
+4. 如果看不到远程分支，可能需要获取远程信息：
+```bash
+git fetch --all  # 获取所有远程分支信息
+```
+
+5. 创建本地分支跟踪远程分支：
+```bash
+git checkout --track origin/main  # 假设远程有main分支
+```
+
+## 常用分支操作命令
+
+- 创建新分支：`git branch <分支名>`
+- 切换分支：`git checkout <分支名>`
+- 删除分支：`git branch -d <分支名>`
+- 推送分支到远程：`git push origin <分支名>`
