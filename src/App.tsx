@@ -21,7 +21,10 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen ${theme} transition-colors duration-300 bg-[var(--color-bg)] text-[var(--color-text-primary)] font-sans`}>
+    <div 
+      className={`min-h-screen ${theme} transition-colors duration-300 bg-[var(--color-bg)] text-[var(--color-text-primary)] font-sans`}
+      data-testid="app-container"
+    >
 
       <AuthContext.Provider
         value={{ isAuthenticated, setIsAuthenticated, logout }}

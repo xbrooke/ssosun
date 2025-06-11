@@ -1,17 +1,36 @@
-# Project Template React
+# 车载应用商店项目
 
-[![Deploy to GitHub Pages](https://github.com/your-username/your-repo/actions/workflows/deploy.yml/badge.svg)](https://github.com/your-username/your-repo/actions/workflows/deploy.yml)
+## 本地开发
 
+1. 安装依赖
+```bash
+npm install
+```
 
+2. 启动开发服务器
+```bash
+npm run dev
+```
 
-[![Deploy to GitHub Pages](https://github.com/your-username/your-repo/actions/workflows/deploy.yml/badge.svg)](https://github.com/your-username/your-repo/actions/workflows/deploy.yml)
+3. 构建生产版本
+```bash
+npm run build
+```
 
-A React project template with Vite, TypeScript and Tailwind CSS.
+4. 预览生产版本
+```bash
+npm run preview
+```
 
-## Features
+## 项目结构
+- `src/components` - 可复用组件
+- `src/pages` - 页面组件
+- `src/data` - 静态数据
+- `src/hooks` - 自定义hooks
+- `src/lib` - 工具函数
 
+## 技术栈
 - React 18
 - TypeScript
 - Tailwind CSS
 - Vite
-- GitHub Pages Deployment

@@ -62,7 +62,7 @@ export default function Category() {
                   setSearchQuery(e.target.value);
                   setIsSearching(e.target.value.length > 0);
                 }}
-                className="rounded-[12px] px-4 py-2 pl-10 pr-8 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)] transition-all duration-300 w-full max-w-xs sm:max-w-sm md:w-64"
+                className="rounded-[4px] px-4 py-2 pl-10 pr-8 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)] transition-all duration-300 w-full max-w-xs sm:max-w-sm md:w-64"
               />
               {searchQuery && (
                 <motion.button
