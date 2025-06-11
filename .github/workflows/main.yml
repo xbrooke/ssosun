@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
@@ -7,45 +7,28 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
       
-      # 设置Node.js环境
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
-      # 安装pnpm
+          
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest
-          
+        run: npm install -g pnpm
+      
       - name: Install dependencies
         run: pnpm install
         
-      - name: Build project
-        run: npm run build
+      - name: Run tests
+        run: pnpm test
         
-      - name: Upload artifact
+      - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
-          name: production-build
-          path: dist
-          version: latest
-          
-      - name: Install dependencies
-        run: pnpm install
-        
-      - name: Build project
-        run: pnpm run build
-        
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-build
-          path: dist
+          name: coverage-report-${{ github.run_id }}
+          path: coverage
