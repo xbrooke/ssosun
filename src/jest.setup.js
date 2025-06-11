@@ -27,25 +27,14 @@ Object.defineProperty(window, 'matchMedia', {
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
+    currentTarget: window,
+    // Add missing properties to fully implement MediaQueryList interface
+    __proto__: EventTarget.prototype,
   })),
 });
 
-// Mock window.matchMedia for testing
-beforeAll(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-      matches: query.includes('dark'),
-      media: query,
-      onchange: null,
-      addListener: jest.fn(), // deprecated
-      removeListener: jest.fn(), // deprecated
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
-  });
-});
+// Remove duplicate mock implementation
+// The mock is already defined above
 
 // Mock localStorage
 const localStorageMock = (function() {
