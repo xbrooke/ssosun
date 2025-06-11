@@ -10,7 +10,8 @@
     "build": "rm -rf dist && npm run build:client && cp package.json dist && touch dist/build.flag",
     "test": "jest",
     "test:watch": "jest --watch",
-    "preinstall": "echo \"建议使用pnpm install安装依赖，如需使用npm请删除此脚本\""
+    "preinstall": "echo \"建议使用pnpm install安装依赖，如需使用npm请删除此脚本\"",
+    "test:ci": "jest --ci --runInBand"
   },
   "dependencies": {
     "clsx": "^2.1.1",
