@@ -46,20 +46,36 @@ export default function Category() {
           transition={{ duration: 0.3 }}
         >
           <h1 className="text-2xl font-bold lg:text-3xl">所有应用</h1>
-          <div className="relative">
-                <input
-                  type="text"
-                  placeholder="搜索应用..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setIsSearching(e.target.value.length > 0);
-                  }}
-                  className="rounded-[4px] px-4 py-2 pl-10 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all duration-200 w-64"
-                />
-                <i className={`fa-solid ${isSearching ? 'fa-spinner animate-spin' : 'fa-magnifying-glass'} absolute left-3 top-2.5 text-gray-400`}></i>
-
-          </div>
+          <motion.div 
+            className="relative"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="relative flex items-center">
+              <i className={`fa-solid ${isSearching ? 'fa-spinner animate-spin' : 'fa-magnifying-glass'} absolute left-3 z-10 text-gray-400 dark:text-gray-300`}></i>
+              <input
+                type="text"
+                placeholder="搜索应用..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearching(e.target.value.length > 0);
+                }}
+                className="rounded-[12px] px-4 py-2 pl-10 pr-8 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)] transition-all duration-300 w-full max-w-xs sm:max-w-sm md:w-64"
+              />
+              {searchQuery && (
+                <motion.button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <i className="fa-solid fa-xmark text-xs text-gray-500 dark:text-gray-400"></i>
+                </motion.button>
+              )}
+            </div>
+          </motion.div>
         </motion.div>
         
         <div className="mb-6">
@@ -111,27 +127,27 @@ export default function Category() {
                   <div className="flex items-center">
                     <div className="relative mr-3 h-12 w-12 sm:h-14 sm:w-14">
                       <div className="absolute inset-0 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-                     <img
-                         src={app.icon}
-                         srcSet={`${app.icon} 1x, ${app.icon.replace('.jpg', '@2x.jpg')} 2x`}
-                         alt={app.name}
-                         className="relative h-full w-full rounded-[12px] object-contain opacity-0 transition-all duration-300"
-                         width="48"
-                         height="48"
-                        loading="lazy"
-                        onLoad={(e) => {
-                          e.currentTarget.classList.add('opacity-100');
-                          e.currentTarget.style.transform = 'scale(1)';
-                        }}
-                        onError={(e) => {
-                          e.currentTarget.src = '/placeholder-app-icon.png';
-                          e.currentTarget.classList.add('opacity-100');
-                        }}
-                        style={{
-                          transform: 'scale(0.98)',
-                          transition: 'opacity 0.3s ease, transform 0.3s ease'
-                        }}
-                      />
+                      <img
+                           src={app.icon}
+                           srcSet={`${app.icon} 1x, ${app.icon.replace('.jpg', '@2x.jpg')} 2x`}
+                           alt={app.name}
+                           className="relative h-full w-full rounded-[12px] object-contain opacity-0 transition-all duration-300"
+                           width="96"
+                           height="96"
+                          loading="lazy"
+                          onLoad={(e) => {
+                            e.currentTarget.classList.add('opacity-100');
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                         onError={(e) => {
+                           e.currentTarget.src = '/placeholder-app-icon.png';
+                           e.currentTarget.classList.add('opacity-100');
+                         }}
+                         style={{
+                           transform: 'scale(0.98)',
+                           transition: 'opacity 0.3s ease, transform 0.3s ease'
+                         }}
+                       />
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate text-sm font-medium sm:text-base">{app.name}</h3>
@@ -143,19 +159,18 @@ export default function Category() {
                    <p className="mt-2 text-xs line-clamp-2 text-gray-600 dark:text-gray-300 sm:text-sm">
                      {app.description}
                    </p>
-                    {searchQuery && (
-                      <div className="mt-2 text-xs text-blue-500">
-                        <i className="fa-solid fa-check mr-1"></i>
-                        匹配: {app.name.toLowerCase().includes(searchQuery.toLowerCase()) ? '名称' : '描述'}
-                      </div>
-                    )}
-
-                 </Link>
-               </motion.div>
-             ))}
-           </motion.div>
-         </AnimatePresence>
-         
+                     {searchQuery && (
+                       <div className="mt-2 text-xs text-blue-500">
+                         <i className="fa-solid fa-check mr-1"></i>
+                         匹配: {app.name.toLowerCase().includes(searchQuery.toLowerCase()) ? '名称' : '描述'}
+                       </div>
+                     )}
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+          
           {filteredApps.length === 0 && searchQuery && (
             <div className="rounded-2xl p-8 text-center bg-gray-100 dark:bg-gray-800">
               <i className="fa-solid fa-search text-4xl mb-4 text-gray-400"></i>
@@ -163,8 +178,7 @@ export default function Category() {
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">尝试使用不同的关键词或检查拼写</p>
             </div>
           )}
-
-       </main>
-     </div>
-   );
- }
+      </main>
+    </div>
+  );
+}

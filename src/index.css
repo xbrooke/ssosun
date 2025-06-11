@@ -12,6 +12,12 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* 移动端优化 */
+  @media (max-width: 768px) {
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: optimizeSpeed;
+  }
 
   /* Flyme Auto 1.8 科技感设计 - 明亮模式 */
   --color-primary: #0066FF; /* 科技蓝 */
