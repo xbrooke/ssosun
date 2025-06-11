@@ -29,6 +29,19 @@ jobs:
         run: pnpm install
         
       - name: Build project
+        run: npm run build
+        
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build
+          path: dist
+          version: latest
+          
+      - name: Install dependencies
+        run: pnpm install
+        
+      - name: Build project
         run: pnpm run build
         
       - name: Upload artifact
