@@ -2,37 +2,41 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: 18
           
-      - name: Install pnpm
-        run: npm install -g pnpm
-      
       - name: Install dependencies
-        run: pnpm install
-      
-      - name: Build project
-        run: pnpm run build
-      
+        run: npm install
+        
+      - name: Build
+        run: npm run build
+        
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v2
         with:
-          path: 'dist/static'
-          
+          path: 'dist'
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    
+    steps:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
