@@ -6,8 +6,8 @@
   "scripts": {
     "dev:client": "vite --host --port 3000",
     "dev": "pnpm run dev:client",
-    "build:client": "vite build --outDir dist/static",
-    "build": "rm -rf dist && npm run build:client && cp package.json dist && touch dist/build.flag",
+    "build:client": "vite build",
+    "build": "vite build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --runInBand"
