@@ -1,46 +1,49 @@
-name: Deploy to GitHub Pages
+name: Deploy
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+  pull_request:
+    branches: [main]
 
 jobs:
-  deploy:
+  build:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: 20
           
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-        
       - name: Install dependencies
-        run: pnpm install
-        
+        run: npm install
+          
       - name: Build
-        run: pnpm run build
-        
+        run: npm run build
+          
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/static
-          
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
