@@ -19,18 +19,18 @@ export default function Settings() {
   const openAndroidSettings = () => {
     setIsLoading(true);
     try {
-      if (isAndroid) {
+       if (isAndroid) {
         // WebView环境下特殊处理
         if (isWebView) {
           try {
             // 方式1: 尝试通过Android Bridge调用
-            if (window.AndroidBridge && typeof window.AndroidBridge.openSettings === 'function') {
-              window.AndroidBridge.openSettings();
+            if (window.AndroidBridge && typeof window.AndroidBridge.openAppSettings === 'function') {
+              window.AndroidBridge.openAppSettings();
               return;
             }
             
             // 方式2: 尝试通用WebView intent调用
-            const intentUri = `intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;end`;
+            const intentUri = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${window.location.hostname};end`;
             window.location.href = intentUri;
             
             // 设置超时检测
@@ -49,13 +49,13 @@ export default function Settings() {
         // 非WebView环境或WebView调用失败后的备用方案
         const tryOpenSettings = () => {
           // 方式1: 使用标准的Android intent URI
-          const intentUri = 'intent:#Intent;action=android.settings.SETTINGS;end';
+          const intentUri = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${window.location.hostname};end`;
           
           // 方式2: 使用通用设置路径
-          const settingsUri = 'package:com.android.settings';
+          const settingsUri = `package:${window.location.hostname}`;
           
           // 方式3: 使用系统设置路径
-          const systemSettingsUri = 'android.settings.SETTINGS';
+          const systemSettingsUri = 'android.settings.APPLICATION_DETAILS_SETTINGS';
 
           // 尝试iframe方式
           const iframe = document.createElement('iframe');
@@ -115,10 +115,10 @@ export default function Settings() {
         >
           <h1 className="text-2xl font-bold mb-6">系统设置</h1>
           
-          <div className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm">
-            <h2 className="text-xl font-medium mb-4">安卓系统设置</h2>
+           <div className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm">
+            <h2 className="text-xl font-medium mb-4">应用管理</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              点击下方按钮可直接跳转到安卓系统设置界面
+              点击下方按钮可直接跳转到安卓应用管理界面
             </p>
             
             <motion.button
@@ -137,9 +137,9 @@ export default function Settings() {
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-gear mr-2"></i>
-                  {isAndroid ? '打开系统设置' : '非安卓设备'}
-                </>
+                   <i className="fa-solid fa-mobile-screen mr-2"></i>
+                   {isAndroid ? '打开应用管理' : '非安卓设备'}
+                 </>
               )}
             </motion.button>
             
