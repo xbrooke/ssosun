@@ -8,7 +8,9 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isWebView, setIsWebView] = useState(false);
+  const [isWeb2Packaged, setIsWeb2Packaged] = useState(false);
   const [packageName, setPackageName] = useState('');
+  const [androidVersion, setAndroidVersion] = useState<number | null>(null);
 
   useEffect(() => {
     // 增强环境检测
@@ -16,6 +18,20 @@ export default function Settings() {
     const android = /android/.test(userAgent);
     setIsAndroid(android);
     setIsWebView(/(webview|wv)/.test(userAgent));
+    
+    // 检测安卓版本
+    if (android) {
+      const versionMatch = userAgent.match(/android\s([0-9]*)/);
+      if (versionMatch && versionMatch[1]) {
+        setAndroidVersion(parseInt(versionMatch[1]));
+      }
+    }
+    
+    // 检测Web2打包环境 - 增强检测逻辑
+    const isWeb2Packaged = /web2apk|wap2app|web2app|webviewapk/i.test(userAgent) || 
+                         (window.location.protocol === 'file:' && android) ||
+                         (window.web2apk !== undefined);
+    setIsWeb2Packaged(isWeb2Packaged);
     
     // 尝试获取包名
     try {
@@ -25,9 +41,11 @@ export default function Settings() {
       if (host && host !== 'localhost' && host !== '127.0.0.1') {
         setPackageName(host);
       } else {
-        // 尝试从WebView环境中获取
+        // 尝试从WebView/Web2App环境中获取
         if (window.AndroidBridge && typeof window.AndroidBridge.getPackageName === 'function') {
           setPackageName(window.AndroidBridge.getPackageName());
+        } else if (window.web2apk && typeof window.web2apk.getPackageName === 'function') {
+          setPackageName(window.web2apk.getPackageName());
         }
       }
     } catch (e) {
@@ -44,6 +62,47 @@ export default function Settings() {
         return;
       }
 
+      // Web2打包环境特殊处理 - 增强处理逻辑
+      if (isWeb2Packaged) {
+        try {
+          // 方式1: 尝试通过Web2打包环境的桥接方法
+          if (window.web2apk && typeof window.web2apk.openSettings === 'function') {
+            window.web2apk.openSettings();
+            return;
+          }
+          
+          // 安卓9+特殊处理
+          const intentUri = androidVersion && androidVersion >= 9
+            ? `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || 'com.web2apk.default'};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || 'com.web2apk.default'};end`
+            : `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || 'com.web2apk.default'};end`;
+          
+          // 方式2.1: 直接location跳转
+          window.location.href = intentUri;
+          
+          // 方式2.2: 使用iframe方式作为备选
+          setTimeout(() => {
+            if (!document.hidden) {
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              iframe.src = intentUri;
+              document.body.appendChild(iframe);
+              setTimeout(() => document.body.removeChild(iframe), 100);
+            }
+          }, 300);
+          
+          // 设置超时检测
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast.error('Web2打包环境可能需要以下配置:\n1. 确保WebViewClient允许intent跳转\n2. 添加AndroidManifest权限\n3. 检查包名是否正确\n4. 安卓9+需要添加REFERRER_NAME');
+            }
+            setIsLoading(false);
+          }, 2000);
+          return;
+        } catch (e) {
+          console.error('Web2打包环境调用失败:', e);
+        }
+      }
+
       // WebView环境下特殊处理
       if (isWebView) {
         try {
@@ -53,8 +112,11 @@ export default function Settings() {
             return;
           }
           
-          // 方式2: 尝试通用WebView intent调用
-          const intentUri = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
+          // 安卓9+特殊处理
+          const intentUri = androidVersion && androidVersion >= 9
+            ? `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
+            : `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
+          
           window.location.href = intentUri;
           
           // 设置超时检测
@@ -74,9 +136,11 @@ export default function Settings() {
       const tryOpenSettings = () => {
         // 尝试多种方式
         const methods = [
-          // 方式1: 标准intent URI
+          // 方式1: 标准intent URI (安卓9+特殊处理)
           () => {
-            const intentUri = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
+            const intentUri = androidVersion && androidVersion >= 9
+              ? `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
+              : `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
             window.location.href = intentUri;
           },
           // 方式2: 通用设置路径
@@ -93,7 +157,9 @@ export default function Settings() {
           () => {
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
-            iframe.src = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
+            iframe.src = androidVersion && androidVersion >= 9
+              ? `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
+              : `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
             document.body.appendChild(iframe);
             setTimeout(() => document.body.removeChild(iframe), 100);
           }
@@ -115,7 +181,10 @@ export default function Settings() {
       // 设置超时检测
       setTimeout(() => {
         if (!document.hidden) {
-          toast.error('无法打开系统设置，请确保应用有相应权限');
+          const errorMsg = androidVersion && androidVersion >= 9
+            ? '无法打开系统设置，安卓9+可能需要:\n1. 检查AndroidManifest权限\n2. 确认包名正确\n3. 添加REFERRER_NAME\n4. 联系Web2App工具提供商'
+            : '无法打开系统设置，请确保应用有相应权限或尝试以下方案:\n1. 检查AndroidManifest权限\n2. 确认包名正确\n3. 联系Web2App工具提供商';
+          toast.error(errorMsg);
         }
         setIsLoading(false);
       }, 1500);
@@ -175,6 +244,26 @@ export default function Settings() {
               <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-[4px] text-sm">
                 <i className="fa-solid fa-info-circle mr-2"></i>
                 检测到WebView环境，可能需要额外配置才能打开系统设置
+                {androidVersion && (
+                  <div className="mt-1">
+                    安卓版本: {androidVersion} {androidVersion >= 9 && '(需要REFERRER_NAME)'}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isWeb2Packaged && (
+              <div className="mt-4 p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-[4px] text-sm">
+                <i className="fa-solid fa-info-circle mr-2"></i>
+                检测到Web2打包环境，请确保:
+                <ul className="mt-1 pl-4 list-disc">
+                  <li>已添加AndroidManifest权限</li>
+                  <li>WebViewClient配置允许intent跳转</li>
+                  <li>包名配置正确</li>
+                  {androidVersion && androidVersion >= 9 && (
+                    <li>安卓9+需要添加REFERRER_NAME</li>
+                  )}
+                </ul>
               </div>
             )}
 
@@ -182,6 +271,11 @@ export default function Settings() {
               <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-[4px] text-sm">
                 <i className="fa-solid fa-info-circle mr-2"></i>
                 当前应用包名: {packageName}
+                {isWeb2Packaged && (
+                  <div className="mt-1 text-xs">
+                    (如果包名不正确，请在Web2App打包工具中配置正确的包名)
+                  </div>
+                )}
               </div>
             )}
           </div>
