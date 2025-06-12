@@ -8,34 +8,12 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isWebView, setIsWebView] = useState(false);
-  const [androidVersion, setAndroidVersion] = useState<number | null>(null);
-  const [browserType, setBrowserType] = useState<string>('');
 
   useEffect(() => {
-    // 增强环境检测逻辑
+    // 检测运行环境
     const userAgent = navigator.userAgent.toLowerCase();
-    const isAndroidDevice = /android/.test(userAgent);
-    setIsAndroid(isAndroidDevice);
+    setIsAndroid(/android/.test(userAgent));
     setIsWebView(/(webview|wv)/.test(userAgent));
-    
-    // 检测浏览器类型
-    if (/chrome/.test(userAgent)) {
-      setBrowserType('chrome');
-    } else if (/firefox/.test(userAgent)) {
-      setBrowserType('firefox');
-    } else if (/safari/.test(userAgent)) {
-      setBrowserType('safari');
-    } else {
-      setBrowserType('other');
-    }
-
-    if (isAndroidDevice) {
-      // 更精确的安卓版本提取
-      const versionMatch = userAgent.match(/android\s([0-9\.]+)/);
-      if (versionMatch && versionMatch[1]) {
-        setAndroidVersion(parseFloat(versionMatch[1]));
-      }
-    }
   }, []);
 
   const openAndroidSettings = () => {
@@ -51,36 +29,14 @@ export default function Settings() {
               return;
             }
             
-            // 方式2: 针对不同安卓版本的WebView intent调用
-            let intentUri;
-            if (androidVersion && androidVersion >= 14) {
-              intentUri = `intent:#Intent;action=android.settings.APP_NOTIFICATION_SETTINGS;package=${window.location.hostname};end`;
-            } else if (androidVersion && androidVersion >= 9) {
-              intentUri = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${window.location.hostname};end`;
-            } else {
-              intentUri = 'intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;end';
-            }
-            
-            // 尝试iframe方式
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = intentUri;
-            document.body.appendChild(iframe);
-            
-            // 尝试直接跳转
+            // 方式2: 尝试通用WebView intent调用
+            const intentUri = `intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;end`;
             window.location.href = intentUri;
             
             // 设置超时检测
             setTimeout(() => {
               if (!document.hidden) {
-                toast.error(`
-                  无法打开系统设置，请尝试以下方法：
-                  ${androidVersion && androidVersion >= 9 
-                    ? '1. 确保应用有通知权限设置权限\n'
-                    : '1. 检查浏览器是否支持intent跳转\n'}
-                  2. 尝试使用Chrome浏览器
-                  3. 确保系统设置应用可用
-                `);
+                toast.error('请在WebView配置中添加以下代码允许intent跳转:\nwebView.getSettings().setJavaScriptEnabled(true);\nwebView.setWebViewClient(new WebViewClient() {\n  @Override\n  public boolean shouldOverrideUrlLoading(WebView view, String url) {\n    if (url.startsWith("intent:")) {\n      try {\n        Context context = view.getContext();\n        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);\n        context.startActivity(intent);\n        return true;\n      } catch (Exception e) {\n        e.printStackTrace();\n      }\n    }\n    return false;\n  }\n});');
               }
               setIsLoading(false);
             }, 1500);
@@ -90,61 +46,41 @@ export default function Settings() {
           }
         }
 
-        // 非WebView环境的多策略跳转
+        // 非WebView环境或WebView调用失败后的备用方案
         const tryOpenSettings = () => {
-          // 安卓14+使用最新的API
-          if (androidVersion && androidVersion >= 14) {
+          // 方式1: 使用标准的Android intent URI
+          const intentUri = 'intent:#Intent;action=android.settings.SETTINGS;end';
+          
+          // 方式2: 使用通用设置路径
+          const settingsUri = 'package:com.android.settings';
+          
+          // 方式3: 使用系统设置路径
+          const systemSettingsUri = 'android.settings.SETTINGS';
+
+          // 尝试iframe方式
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = intentUri;
+          document.body.appendChild(iframe);
+          
+          // 尝试直接跳转
+          try {
+            window.location.href = intentUri;
+          } catch (e) {
+            console.log('方式1失败，尝试方式2');
             try {
-              // 方式1: 尝试打开应用通知设置
-              const intentUri = `intent:#Intent;action=android.settings.APP_NOTIFICATION_SETTINGS;package=${window.location.hostname};end`;
-              
-              // 方式2: 尝试打开应用信息页面
-              const appInfoUri = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${window.location.hostname};end`;
-              
-              // 方式3: 尝试通用设置
-              const settingsUri = 'intent:#Intent;action=android.settings.SETTINGS;end';
-              
-              // 尝试直接跳转
-              window.location.href = intentUri;
-              setTimeout(() => {
-                if (!document.hidden) {
-                  window.location.href = appInfoUri;
-                  setTimeout(() => {
-                    if (!document.hidden) {
-                      window.location.href = settingsUri;
-                    }
-                  }, 500);
-                }
-              }, 500);
+              window.location.href = settingsUri;
             } catch (e) {
-              console.error('安卓14+跳转失败:', e);
-            }
-          } 
-          // 安卓9-13版本
-          else if (androidVersion && androidVersion >= 9) {
-            try {
-              const appInfoUri = `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${window.location.hostname};end`;
-              window.location.href = appInfoUri;
-              setTimeout(() => {
-                if (!document.hidden) {
-                  window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;end';
+              console.log('方式2失败，尝试方式3');
+              try {
+                // 使用Android intent API
+                if (window.android && typeof window.android.startActivity === 'function') {
+                  window.android.startActivity(systemSettingsUri);
                 }
-              }, 500);
-            } catch (e) {
-              console.error('安卓9-13跳转失败:', e);
-            }
-          } 
-          // 安卓8及以下版本
-          else {
-            try {
-              window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;end';
-              setTimeout(() => {
-                if (!document.hidden) {
-                  window.location.href = 'package:com.android.settings';
-                }
-              }, 500);
-            } catch (e) {
-              console.error('传统方式跳转失败:', e);
+              } catch (e) {
+                console.error('所有方式尝试失败');
+                throw new Error('无法找到有效的设置路径');
+              }
             }
           }
         };
@@ -154,13 +90,7 @@ export default function Settings() {
         // 设置超时检测
         setTimeout(() => {
           if (!document.hidden) {
-            toast.error(`
-              无法打开系统设置，可能原因：
-              1. 浏览器不支持intent跳转
-              2. 系统设置应用不可用
-              3. 当前安卓版本(${androidVersion})需要特殊权限
-              建议：${browserType !== 'chrome' ? '尝试使用Chrome浏览器' : '检查系统权限设置'}
-            `);
+            toast.error('无法打开系统设置，请确保应用有相应权限');
           }
           setIsLoading(false);
         }, 1500);
@@ -224,19 +154,6 @@ export default function Settings() {
               <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-[4px] text-sm">
                 <i className="fa-solid fa-info-circle mr-2"></i>
                 检测到WebView环境，可能需要额外配置才能打开系统设置
-                {androidVersion && (
-                  <div className="mt-2">
-                    <i className="fa-solid fa-circle-info mr-1"></i>
-                    安卓{androidVersion}版本需要特殊权限配置
-                  </div>
-                )}
-              </div>
-            )}
-
-            {isAndroid && androidVersion && (
-              <div className="mt-4 p-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-[4px] text-sm">
-                <i className="fa-solid fa-mobile-screen mr-2"></i>
-                检测到安卓 {androidVersion} 系统，当前浏览器: {browserType}
               </div>
             )}
           </div>

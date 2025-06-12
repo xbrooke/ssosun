@@ -4,7 +4,7 @@
 
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
+  line-height: 1.5;
   font-weight: 400;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -14,53 +14,48 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'liga', 'kern';
   
   /* 移动端优化 */
   @media (max-width: 768px) {
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    font-size: 16px;
-    line-height: 1.5;
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: optimizeSpeed;
   }
 
-/* 现代化科技感设计 - 明亮模式 */
-  --color-primary: #2563EB; /* 更鲜明的科技蓝 */
-  --color-primary-light: #3B82F6;
-  --color-primary-dark: #1D4ED8;
-  --color-text-primary: #1E293B; 
-  --color-text-secondary: #64748B;
-  --color-bg: #F8FAFC; 
+  /* Flyme Auto 1.8 科技感设计 - 明亮模式 */
+  --color-primary: #0066FF; /* 科技蓝 */
+  --color-primary-light: #3388FF;
+  --color-primary-dark: #0044CC;
+  --color-text-primary: #111111; 
+  --color-text-secondary: #555555;
+  --color-bg: #F5F5F5; 
   --color-bg-secondary: #FFFFFF;
-  --color-border: #E2E8F0;
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
+  --color-border: #E0E0E0;
+  --color-success: #00A648;
+  --color-warning: #FF8C00;
+  --color-error: #FF3333;
   
-  /* 现代化阴影系统 */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-primary: 0 4px 14px rgba(37, 99, 235, 0.35);
-  --shadow-hover: 0 8px 16px rgba(37, 99, 235, 0.2);
-  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  /* 科技感阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.16);
+  --shadow-primary: 0 4px 12px rgba(0, 102, 255, 0.3); /* 增强主色阴影 */
+  --shadow-hover: 0 6px 12px rgba(0, 102, 255, 0.25); /* 悬停阴影 */
 }
 
 .dark {
-  /* 现代化科技感设计 - 暗黑模式 */
-  --color-primary: #60A5FA; /* 更柔和的科技蓝 */
-  --color-primary-light: #93C5FD;
-  --color-primary-dark: #3B82F6;
-  --color-text-primary: #F8FAFC; 
-  --color-text-secondary: #CBD5E1;
-  --color-bg: #0F172A; /* 更深的基础背景 */
-  --color-bg-secondary: #1E293B; /* 增强层次感 */
-  --color-border: #334155; /* 更明显的边框 */
-  --color-success: #34D399;
-  --color-warning: #FBBF24;
-  --color-error: #F87171;
-  --shadow-primary: 0 4px 18px rgba(96, 165, 250, 0.45);
-  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  /* Flyme Auto 1.8 科技感设计 - 暗黑模式 (优化版) */
+  --color-primary: #3A8CFF; /* 更明亮的科技蓝 */
+  --color-primary-light: #5CADFF;
+  --color-primary-dark: #1A7AFF;
+  --color-text-primary: #F0F0F0; /* 更纯净的白色 */
+  --color-text-secondary: #B0B0B0; /* 优化对比度 */
+  --color-bg: #0A0A0A; /* 更深的基础背景 */
+  --color-bg-secondary: #161616; /* 增强层次感 */
+  --color-border: #333333; /* 更明显的边框 */
+  --color-success: #00D85A; /* 更鲜艳的成功色 */
+  --color-warning: #FFB300;
+  --color-error: #FF5252;
+  --shadow-primary: 0 4px 16px rgba(58, 140, 255, 0.4); /* 更柔和的阴影 */
 }
 
 /* 其他样式保持不变... */
