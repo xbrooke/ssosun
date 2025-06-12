@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite --host --port 3000",
     "build": "vite build",
+    "build:client": "vite build", // 添加此行（根据实际需求调整命令）
     "preview": "vite preview"
   },
   "dependencies": {
