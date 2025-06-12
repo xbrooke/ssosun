@@ -27,9 +27,10 @@ export default function Sidebar() {
 
   const menuItems = [
     { to: '/', icon: 'fab fa-github-alt', text: '所有应用' },
-    { to: '/featured', icon: 'fas fa-star', text: '精选合集' },
+    { to: '/featured', icon: 'fas fa-book', text: '教程中心' },
+    { to: '/wallpaper', icon: 'fas fa-image', text: '车机壁纸' },
+    { to: '/settings', icon: 'fas fa-gear', text: '安卓设置' },
     { to: '/donate', icon: 'fas fa-heart', text: '赞赏支持' }
-
   ];
 
   return (
@@ -99,38 +100,63 @@ export default function Sidebar() {
                    应用分类
                 </motion.h2>
                  <ul className="space-y-1">
-                   {menuItems.map((item, index) => (
-                     <motion.li
-                      key={item.to}
-                      initial={{ x: -20 }}
-                      animate={{ x: 0 }}
-                      transition={{ delay: index * 0.1 + 0.2 }}
-                      onClick={() => isMobile && setIsOpen(false)}
-                    >
-                       <Link 
-                          to={item.to}
-                           className={`
-                             flex items-center rounded-[4px] p-2 text-sm
-                             md:p-3 md:text-base
-                             ${location.pathname === item.to 
-                               ? 'bg-[var(--color-primary)] text-white'
-                               : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)]/10'}
-                             transition-all duration-200
-                           `}
-                       >
-                        <div className={`
-                          mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[4px]
-                          md:h-7 md:w-7
-                          ${location.pathname === item.to
-                            ? 'bg-white/20'
-                            : 'bg-[var(--color-primary)]/10'}
-                        `}>
-                        <i className={`fa-solid ${item.icon} text-sm ${location.pathname === item.to ? 'text-white' : 'text-[var(--color-primary)]'}`}></i>
-                      </div>
-                         <span>{item.text}</span>
-                       </Link>
-                    </motion.li>
-                  ))}
+
+                    {menuItems.map((item, index) => (
+                      <motion.li
+                        key={item.to}
+                        initial={{ x: -20 }}
+                        animate={{ x: 0 }}
+                        transition={{ delay: index * 0.1 + 0.2 }}
+                        onClick={() => isMobile && setIsOpen(false)}
+                      >
+                        {item.external ? (
+                          <a
+                            href={item.to}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`
+                              flex items-center rounded-[4px] p-2 text-sm
+                              md:p-3 md:text-base
+                              text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)]/10
+                              transition-all duration-200
+                            `}
+                          >
+                            <div className={`
+                              mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[4px]
+                              md:h-7 md:w-7
+                              bg-[var(--color-primary)]/10
+                            `}>
+                              <i className={`fa-solid ${item.icon} text-sm text-[var(--color-primary)]`}></i>
+                            </div>
+                            <span>{item.text}</span>
+                          </a>
+                        ) : (
+                          <Link 
+                            to={item.to}
+                            className={`
+                              flex items-center rounded-[4px] p-2 text-sm
+                              md:p-3 md:text-base
+                              ${location.pathname === item.to 
+                                ? 'bg-[var(--color-primary)] text-white'
+                                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)]/10'}
+                              transition-all duration-200
+                            `}
+                          >
+                            <div className={`
+                              mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[4px]
+                              md:h-7 md:w-7
+                              ${location.pathname === item.to
+                                ? 'bg-white/20'
+                                : 'bg-[var(--color-primary)]/10'}
+                            `}>
+                              <i className={`fa-solid ${item.icon} text-sm ${location.pathname === item.to ? 'text-white' : 'text-[var(--color-primary)]'}`}></i>
+                            </div>
+                            <span>{item.text}</span>
+                          </Link>
+                        )}
+                      </motion.li>
+                    ))}
+
                 </ul>
               </motion.div>
 

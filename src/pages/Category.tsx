@@ -39,44 +39,46 @@ export default function Category() {
       <Sidebar />
       <main className="ml-0 flex-1 p-4 transition-all duration-300 md:ml-64 lg:ml-72 md:p-8 text-gray-800 bg-gray-50 dark:text-gray-100 dark:bg-gray-900">
 
-        <motion.div 
-          className="mb-8 flex items-center justify-between"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h1 className="text-2xl font-bold lg:text-3xl">所有应用</h1>
+        <div className="sticky top-0 z-10 pt-4 pb-2 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur-sm">
           <motion.div 
-            className="relative"
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center justify-between"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="relative flex items-center">
-              <i className={`fa-solid ${isSearching ? 'fa-spinner animate-spin' : 'fa-magnifying-glass'} absolute left-3 z-10 text-gray-400 dark:text-gray-300`}></i>
-              <input
-                type="text"
-                placeholder="搜索应用..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setIsSearching(e.target.value.length > 0);
-                }}
-                className="rounded-[4px] px-4 py-2 pl-10 pr-8 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)] transition-all duration-300 w-full max-w-xs sm:max-w-sm md:w-64"
-              />
-              {searchQuery && (
-                <motion.button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <i className="fa-solid fa-xmark text-xs text-gray-500 dark:text-gray-400"></i>
-                </motion.button>
-              )}
-            </div>
+            <h1 className="text-2xl font-bold lg:text-3xl">所有应用</h1>
+            <motion.div 
+              className="relative"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="relative flex items-center">
+                <i className={`fa-solid ${isSearching ? 'fa-spinner animate-spin' : 'fa-magnifying-glass'} absolute left-3 z-10 text-gray-400 dark:text-gray-300`}></i>
+                <input
+                  type="text"
+                  placeholder="搜索应用..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsSearching(e.target.value.length > 0);
+                  }}
+                  className="rounded-[4px] px-4 py-2 pl-10 pr-8 text-base md:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)] transition-all duration-300 w-full max-w-xs sm:max-w-sm md:w-64 touch-manipulation"
+                />
+                {searchQuery && (
+                  <motion.button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <i className="fa-solid fa-xmark text-xs text-gray-500 dark:text-gray-400"></i>
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
+        </div>
         
         <div className="mb-6">
           <div className="relative">

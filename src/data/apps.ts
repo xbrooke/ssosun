@@ -135,44 +135,58 @@ export const featuredApps: App[] = [
 
 export const categories = ['全部', '导航', '音乐电台', '车载工具'];
 
-export const collections = [
+export interface Tutorial {
+  id: string;
+  title: string;
+  description: string;
+  cover: string;
+  category: string;
+  author: string;
+  date: string;
+  readTime: string;
+  content: string;
+  tags: string[];
+  isFeatured: boolean;
+}
+
+export const tutorials: Tutorial[] = [
   {
-    id: 'navigation',
-    title: '智能导航技巧',
-    description: '掌握车载导航的高级功能和实用技巧',
-    apps: ['1', '2'],
+    id: 'navigation-guide',
+    title: '车载导航系统完全指南',
+    description: '从基础到高级，全面掌握车载导航系统的使用技巧',
     cover: 'https://space.coze.cn/api/coze_space/gen_image?image_size=landscape_16_9&prompt=car%20navigation%20interface%2C%20modern%20design%2C%20blue%20theme&sign=48864d08fcfe1b34d8d730d36bcf4a83',
-    category: '导航',
-    duration: '1.5小时',
-    lessons: 8,
-    compatibleModels: ['所有车型'],
-    usageScenarios: ['长途驾驶', '城市导航'],
-    isRecommended: true
+    category: '导航系统',
+    author: '张技术',
+    date: '2025-05-15',
+    readTime: '15分钟',
+    content: '详细讲解车载导航的各项功能和使用场景...',
+    tags: ['导航', '新手教程', '系统设置'],
+    isFeatured: true
   },
   {
-    id: 'entertainment',
-    title: '车载娱乐指南',
-    description: '优化您的车载音乐和视频体验',
-    apps: ['3', '11'],
+    id: 'entertainment-optimize',
+    title: '车载娱乐系统优化指南',
+    description: '提升您的车载音乐和视频体验的实用技巧',
     cover: 'https://space.coze.cn/api/coze_space/gen_image?image_size=landscape_16_9&prompt=car%20entertainment%20system%2C%20music%20player%20interface&sign=80d8e24eb9e849fa45c01089d90c01af',
-    category: '娱乐',
-    duration: '1小时',
-    lessons: 6,
-    compatibleModels: ['2020年后车型'],
-    usageScenarios: ['日常通勤', '家庭出行'],
-    isRecommended: true
+    category: '娱乐系统',
+    author: '李音效',
+    date: '2025-05-20',
+    readTime: '12分钟',
+    content: '如何优化音效设置和播放列表管理...',
+    tags: ['音乐', '视频', '音效'],
+    isFeatured: true
   },
   {
     id: 'vehicle-settings',
-    title: '车辆设置优化',
-    description: '个性化您的车辆设置以获得最佳驾驶体验',
-    apps: ['4', '5', '6'],
+    title: '车辆个性化设置详解',
+    description: '根据您的驾驶习惯优化车辆各项参数',
     cover: 'https://space.coze.cn/api/coze_space/gen_image?image_size=landscape_16_9&prompt=car%20settings%20interface%2C%20minimal%20design&sign=ff6c6e2b55f5b8cf25ad850cb89c4376',
-    category: '车辆设置',
-    duration: '2小时',
-    lessons: 10,
-    compatibleModels: ['高端车型'],
-    usageScenarios: ['性能优化', '个性化设置'],
-    isRecommended: false
+    category: '系统设置',
+    author: '王工程师',
+    date: '2025-06-01',
+    readTime: '18分钟',
+    content: '驾驶模式、座椅记忆、氛围灯等个性化设置...',
+    tags: ['个性化', '驾驶模式', '系统设置'],
+    isFeatured: false
   }
 ];

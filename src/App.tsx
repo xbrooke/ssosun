@@ -1,8 +1,11 @@
 import { Routes, Route } from "react-router-dom";
+import Settings from "@/pages/Settings";
 import Category from "@/pages/Category";
 import AppDetail from "@/pages/AppDetail";
 import Featured from "@/pages/Featured";
+import Wallpapers from "@/pages/Wallpapers";
 import Donate from "@/pages/Donate";
+import { Empty } from "@/components/Empty";
 import { createContext, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -33,6 +36,10 @@ export default function App() {
           <Route path="/" element={<Category />} />
           <Route path="/app/:id" element={<AppDetail />} />
           <Route path="/featured" element={<Featured />} />
+          <Route path="/tutorial/:id" element={<Featured />} />
+          <Route path="/wallpaper" element={<Wallpapers />} />
+          <Route path="/wallpaper/:id" element={<Wallpapers />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/donate" element={<Donate />} />
         </Routes>
       </AuthContext.Provider>

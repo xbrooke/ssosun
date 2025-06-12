@@ -6,6 +6,8 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 
   color-scheme: light dark;
   font-synthesis: none;

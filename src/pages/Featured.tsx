@@ -1,164 +1,225 @@
 import { Link } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
-import { collections, featuredApps } from '@/data/apps';
+import { tutorials } from '@/data/apps';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
+import { useState } from 'react';
+
+function ArticleModal({ tutorial, onClose }: { tutorial: typeof tutorials[0], onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          className="relative max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[12px] shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+
+          <div className="p-6">
+            <div className="relative h-64 w-full overflow-hidden rounded-t-[12px]">
+              <img
+                src={tutorial.cover}
+                alt={tutorial.title}
+                className="h-full w-full object-cover"
+              />
+            </div>
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {tutorial.category} • {tutorial.readTime}
+                </span>
+                {tutorial.isFeatured && (
+                  <span className="px-2 py-1 bg-yellow-500 text-white rounded-sm text-xs">
+                    精选教程
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-2xl font-bold mb-4">{tutorial.title}</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                {tutorial.description}
+              </p>
+
+              <div className="prose dark:prose-invert max-w-none">
+                {tutorial.content}
+              </div>
+
+              <div className="mt-8">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                      <i className="fa-solid fa-user text-gray-500"></i>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-medium">{tutorial.author}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      发布于 {tutorial.date}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-2">
+                {tutorial.tags.map(tag => (
+                  <span 
+                    key={tag}
+                    className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-sm"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 export default function Featured() {
   const { isDark } = useTheme();
+  const [selectedCategory, setSelectedCategory] = useState('全部');
+  const [selectedTutorial, setSelectedTutorial] = useState<typeof tutorials[0] | null>(null);
+
+  const categories = ['全部', ...Array.from(new Set(tutorials.map(t => t.category)))];
+
+  const filteredTutorials = selectedCategory === '全部' 
+    ? tutorials 
+    : tutorials.filter(t => t.category === selectedCategory);
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <Sidebar />
       <main className="ml-0 flex-1 p-4 transition-all duration-300 md:ml-64 lg:ml-72 md:p-8 text-gray-800 bg-gray-50 dark:text-gray-100 dark:bg-gray-900">
 
-        <motion.div 
-          className="mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h1 className="text-2xl font-bold lg:text-3xl">车机精选合集</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            专为车机优化的应用合集，提升您的驾驶体验
-          </p>
-        </motion.div>
+        <div className="sticky top-0 z-10 pt-4 pb-2 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h1 className="text-2xl font-bold lg:text-3xl">车机教程中心</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              专业车机使用教程，助您掌握各项功能
+            </p>
+          </motion.div>
+        </div>
 
-        <div className="space-y-8">
-          {collections.map((collection) => (
+        {/* 分类筛选 */}
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-2">
+            {categories.map(category => (
+              <motion.button
+                key={category}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedCategory(category)}
+                className={`
+                  whitespace-nowrap rounded-sm px-4 py-2 text-sm font-medium transition-all 
+                  ${selectedCategory === category
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                    : 'bg-white dark:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)]/10'}
+                `}
+              >
+                {category}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* 教程列表 */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredTutorials.map(tutorial => (
             <motion.div
-              key={collection.id}
+              key={tutorial.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-               className="overflow-hidden rounded-[4px] bg-white dark:bg-gray-800 shadow-lg"
+              whileHover={{ y: -5 }}
+              className="overflow-hidden rounded-[4px] bg-white dark:bg-gray-800 shadow-lg cursor-pointer"
+              onClick={() => setSelectedTutorial(tutorial)}
             >
-              <div className="relative h-48 w-full overflow-hidden md:h-56">
+              <div className="relative h-48 w-full overflow-hidden">
                 <img
-                  src={collection.cover}
-                  alt={collection.title}
+                  src={tutorial.cover}
+                  alt={tutorial.title}
                   className="h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-4 md:p-6">
-                    <div className="flex items-center">
-                      <i className="fas fa-graduation-cap mr-2 text-white"></i>
-                      <h2 className="text-xl font-bold text-white md:text-2xl">{collection.title}</h2>
-                    </div>
-                   <div className="mt-2 flex flex-wrap gap-2">
-                     <span className="rounded-sm bg-white/20 px-2 py-1 text-xs text-white">{collection.category}</span>
-                     <span className="rounded-sm bg-white/20 px-2 py-1 text-xs text-white">{collection.duration}</span>
-                     <span className="rounded-sm bg-white/20 px-2 py-1 text-xs text-white">兼容: {collection.compatibleModels}</span>
-                     {collection.isRecommended && (
-                       <span className="rounded-sm bg-yellow-500/80 px-2 py-1 text-xs text-white">官方推荐</span>
-                     )}
-                   </div>
-                  <p className="mt-2 text-sm text-gray-200 md:text-base">{collection.description}</p>
-                </div>
+                {tutorial.isFeatured && (
+                  <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded-sm text-xs">
+                    精选教程
+                  </div>
+                )}
               </div>
 
-              <div className="p-4 md:p-6">
-                <AnimatePresence>
-                  <motion.div 
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ staggerChildren: 0.1 }}
-                  >
-                    {collection.apps.map((appId) => {
-                      const app = featuredApps.find((a) => a.id === appId);
-                      if (!app) return null;
-                      return (
-                        <motion.div
-                          key={app.id}
-                          layout
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          transition={{ duration: 0.2 }}
-                          whileHover={{ y: -5 }}
-                        >
-                          <Link
-                            to={`/app/${app.id}`}
-                            className="flex items-center rounded-xl p-4 transition-all hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            <img
-                              src={app.icon}
-                              alt={app.name}
-                                className="mr-4 h-12 w-12 rounded-[12px] shadow-sm"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <h3 className="truncate font-medium text-[#1A1A1A] dark:text-white">{app.name}</h3>
-                              <p className="truncate text-sm text-gray-500 dark:text-gray-400">
-                                {app.category}
-                              </p>
-                            </div>
-                          </Link>
-                        </motion.div>
-                      );
-                    })}
-                  </motion.div>
-                </AnimatePresence>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {tutorial.category}
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {tutorial.readTime}
+                  </span>
+                </div>
+
+                <h2 className="text-xl font-bold mb-2">{tutorial.title}</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  {tutorial.description}
+                </p>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    作者: {tutorial.author}
+                  </span>
+                  <span className="text-[var(--color-primary)] text-sm font-medium">
+                    阅读全文 →
+                  </span>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {tutorial.tags.map(tag => (
+                    <span 
+                      key={tag}
+                      className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-sm"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* 所有应用展示区 */}
-        <motion.div 
-          className="mt-16"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="mb-8 flex items-center">
-             <h2 className="text-2xl font-bold">车机精选应用</h2>
-             <div className="ml-4 h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent dark:via-gray-600"></div>
+        {selectedTutorial && (
+          <ArticleModal 
+            tutorial={selectedTutorial} 
+            onClose={() => setSelectedTutorial(null)} 
+          />
+        )}
+
+        {filteredTutorials.length === 0 && (
+          <div className="rounded-2xl p-8 text-center bg-gray-100 dark:bg-gray-800">
+            <i className="fa-solid fa-book-open text-4xl mb-4 text-gray-400"></i>
+            <p className="text-lg text-gray-600 dark:text-gray-300">暂无相关教程</p>
           </div>
-          
-           {featuredApps.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                {featuredApps.map((app) => (
-                  <motion.div
-                    key={app.id}
-                    whileHover={{ y: -5, scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    className="overflow-hidden"
-                  >
-                    <Link
-                      to={`/app/${app.id}`}
-                       className="group flex flex-col items-center rounded-none p-5 transition-all bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 shadow-sm hover:shadow-md"
-                    >
-                      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-xl bg-white/10 p-1 group-hover:bg-white/20">
-                       <img
-                           src={app.icon}
-                           srcSet={`${app.icon} 1x, ${app.icon.replace('.jpg', '@2x.jpg')} 2x`}
-                           alt={app.name}
-                           className="h-full w-full object-contain rounded-[12px] opacity-0 transition-all duration-300"
-                           loading="lazy"
-                          onLoad={(e) => e.currentTarget.classList.add('opacity-100')}
-                          onError={(e) => e.currentTarget.src = '/placeholder-app-icon.png'}
-                        />
-                      </div>
-                     <h3 className="w-full truncate text-sm font-medium sm:text-base">{app.name}</h3>
-                     <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                       {app.category}
-                     </p>
-                     <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-500 line-clamp-2">
-                       {app.description}
-                     </p>
-                   </Link>
-                 </motion.div>
-               ))}
-             </div>
-          ) : (
-            <div className="rounded-2xl p-8 text-center bg-gray-100 dark:bg-gray-800">
-              <i className="fa-solid fa-box-open text-4xl mb-4 text-gray-400"></i>
-              <p className="text-lg text-gray-600 dark:text-gray-300">暂无精选应用</p>
-            </div>
-          )}
-        </motion.div>
+        )}
       </main>
     </div>
   );
