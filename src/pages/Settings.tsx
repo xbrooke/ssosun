@@ -7,18 +7,46 @@ export default function Settings() {
   const { isDark } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [isWebView, setIsWebView] = useState(false);
 
   useEffect(() => {
-    // 检测是否在安卓环境中
+    // 检测运行环境
     const userAgent = navigator.userAgent.toLowerCase();
     setIsAndroid(/android/.test(userAgent));
+    setIsWebView(/(webview|wv)/.test(userAgent));
   }, []);
 
   const openAndroidSettings = () => {
     setIsLoading(true);
     try {
       if (isAndroid) {
-        // 尝试多种跳转方式
+        // WebView环境下特殊处理
+        if (isWebView) {
+          try {
+            // 方式1: 尝试通过Android Bridge调用
+            if (window.AndroidBridge && typeof window.AndroidBridge.openSettings === 'function') {
+              window.AndroidBridge.openSettings();
+              return;
+            }
+            
+            // 方式2: 尝试通用WebView intent调用
+            const intentUri = `intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;end`;
+            window.location.href = intentUri;
+            
+            // 设置超时检测
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast.error('请在WebView配置中添加以下代码允许intent跳转:\nwebView.getSettings().setJavaScriptEnabled(true);\nwebView.setWebViewClient(new WebViewClient() {\n  @Override\n  public boolean shouldOverrideUrlLoading(WebView view, String url) {\n    if (url.startsWith("intent:")) {\n      try {\n        Context context = view.getContext();\n        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);\n        context.startActivity(intent);\n        return true;\n      } catch (Exception e) {\n        e.printStackTrace();\n      }\n    }\n    return false;\n  }\n});');
+              }
+              setIsLoading(false);
+            }, 1500);
+            return;
+          } catch (e) {
+            console.error('WebView intent调用失败:', e);
+          }
+        }
+
+        // 非WebView环境或WebView调用失败后的备用方案
         const tryOpenSettings = () => {
           // 方式1: 使用标准的Android intent URI
           const intentUri = 'intent:#Intent;action=android.settings.SETTINGS;end';
@@ -93,7 +121,7 @@ export default function Settings() {
               点击下方按钮可直接跳转到安卓系统设置界面
             </p>
             
-             <motion.button
+            <motion.button
               onClick={openAndroidSettings}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -119,6 +147,13 @@ export default function Settings() {
               <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-[4px] text-sm">
                 <i className="fa-solid fa-triangle-exclamation mr-2"></i>
                 此功能仅在安卓设备上可用
+              </div>
+            )}
+
+            {isWebView && (
+              <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-[4px] text-sm">
+                <i className="fa-solid fa-info-circle mr-2"></i>
+                检测到WebView环境，可能需要额外配置才能打开系统设置
               </div>
             )}
           </div>
