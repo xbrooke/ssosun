@@ -62,7 +62,10 @@ export default function Settings() {
         return;
       }
 
-      // Web2打包环境特殊处理 - 增强处理逻辑
+      // 定义跳转到系统应用管理的intent action
+      const SYSTEM_APPS_ACTION = 'android.settings.MANAGE_ALL_APPLICATIONS_SETTINGS';
+      
+      // Web2打包环境特殊处理
       if (isWeb2Packaged) {
         try {
           // 方式1: 尝试通过Web2打包环境的桥接方法
@@ -71,24 +74,12 @@ export default function Settings() {
             return;
           }
           
-          // 安卓9+特殊处理
+          // 方式2: 使用intent URI跳转
           const intentUri = androidVersion && androidVersion >= 9
-            ? `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || 'com.web2apk.default'};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || 'com.web2apk.default'};end`
-            : `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || 'com.web2apk.default'};end`;
+            ? `intent:#Intent;action=${SYSTEM_APPS_ACTION};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || 'com.web2apk.default'};end`
+            : `intent:#Intent;action=${SYSTEM_APPS_ACTION};end`;
           
-          // 方式2.1: 直接location跳转
           window.location.href = intentUri;
-          
-          // 方式2.2: 使用iframe方式作为备选
-          setTimeout(() => {
-            if (!document.hidden) {
-              const iframe = document.createElement('iframe');
-              iframe.style.display = 'none';
-              iframe.src = intentUri;
-              document.body.appendChild(iframe);
-              setTimeout(() => document.body.removeChild(iframe), 100);
-            }
-          }, 300);
           
           // 设置超时检测
           setTimeout(() => {
@@ -112,10 +103,10 @@ export default function Settings() {
             return;
           }
           
-          // 安卓9+特殊处理
+          // 方式2: 使用intent URI跳转
           const intentUri = androidVersion && androidVersion >= 9
-            ? `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
-            : `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
+            ? `intent:#Intent;action=${SYSTEM_APPS_ACTION};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
+            : `intent:#Intent;action=${SYSTEM_APPS_ACTION};end`;
           
           window.location.href = intentUri;
           
@@ -139,27 +130,23 @@ export default function Settings() {
           // 方式1: 标准intent URI (安卓9+特殊处理)
           () => {
             const intentUri = androidVersion && androidVersion >= 9
-              ? `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
-              : `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
+              ? `intent:#Intent;action=${SYSTEM_APPS_ACTION};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
+              : `intent:#Intent;action=${SYSTEM_APPS_ACTION};end`;
             window.location.href = intentUri;
           },
-          // 方式2: 通用设置路径
-          () => {
-            window.location.href = `package:${packageName || window.location.hostname}`;
-          },
-          // 方式3: 使用Android intent API
+          // 方式2: 使用Android intent API
           () => {
             if (window.android && typeof window.android.startActivity === 'function') {
-              window.android.startActivity('android.settings.APPLICATION_DETAILS_SETTINGS');
+              window.android.startActivity(SYSTEM_APPS_ACTION);
             }
           },
-          // 方式4: 使用iframe方式
+          // 方式3: 使用iframe方式
           () => {
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
             iframe.src = androidVersion && androidVersion >= 9
-              ? `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
-              : `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=${packageName || window.location.hostname};end`;
+              ? `intent:#Intent;action=${SYSTEM_APPS_ACTION};S.android.intent.extra.REFERRER_NAME=android-app://${packageName || window.location.hostname};end`
+              : `intent:#Intent;action=${SYSTEM_APPS_ACTION};end`;
             document.body.appendChild(iframe);
             setTimeout(() => document.body.removeChild(iframe), 100);
           }
@@ -182,15 +169,15 @@ export default function Settings() {
       setTimeout(() => {
         if (!document.hidden) {
           const errorMsg = androidVersion && androidVersion >= 9
-            ? '无法打开系统设置，安卓9+可能需要:\n1. 检查AndroidManifest权限\n2. 确认包名正确\n3. 添加REFERRER_NAME\n4. 联系Web2App工具提供商'
-            : '无法打开系统设置，请确保应用有相应权限或尝试以下方案:\n1. 检查AndroidManifest权限\n2. 确认包名正确\n3. 联系Web2App工具提供商';
+            ? '无法打开系统应用管理，安卓9+可能需要:\n1. 检查AndroidManifest权限\n2. 确认包名正确\n3. 添加REFERRER_NAME\n4. 联系Web2App工具提供商'
+            : '无法打开系统应用管理，请确保应用有相应权限或尝试以下方案:\n1. 检查AndroidManifest权限\n2. 确认包名正确\n3. 联系Web2App工具提供商';
           toast.error(errorMsg);
         }
         setIsLoading(false);
       }, 1500);
     } catch (error) {
-      console.error('打开系统设置失败:', error);
-      toast.error(`打开设置失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      console.error('打开系统应用管理失败:', error);
+      toast.error(`打开系统应用管理失败: ${error instanceof Error ? error.message : '未知错误'}`);
       setIsLoading(false);
     }
   };
@@ -220,15 +207,15 @@ export default function Settings() {
                 isLoading ? 'bg-gray-300 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
               } text-white shadow-sm transition-colors`}
             >
-              {isLoading ? (
+               {isLoading ? (
                 <>
                   <i className="fa-solid fa-spinner animate-spin mr-2"></i>
-                  {isAndroid ? '正在跳转...' : '检测设备...'}
+                  {isAndroid ? '正在打开系统应用管理...' : '检测设备...'}
                 </>
               ) : (
-                <>
+                 <>
                   <i className="fa-solid fa-mobile-screen mr-2"></i>
-                  {isAndroid ? '打开应用管理' : '非安卓设备'}
+                  {isAndroid ? '打开系统应用管理' : '非安卓设备'}
                 </>
               )}
             </motion.button>

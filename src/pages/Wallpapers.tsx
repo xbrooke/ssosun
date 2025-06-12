@@ -69,15 +69,15 @@ export default function Wallpapers() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4">
+            <div className="pt-2">
               <h1 className="text-2xl font-bold lg:text-3xl">车机壁纸</h1>
               <p className="mt-2 text-gray-600 dark:text-gray-400">
                 专为车机优化的高清壁纸，提升您的驾驶体验
               </p>
             </div>
             
-            <div className="relative w-[200px] fixed top-4 right-4 z-20 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-[4px] border border-gray-200 dark:border-gray-700">
+            <div className="fixed top-4 right-4 z-20 w-[200px] bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-[4px] border border-gray-200 dark:border-gray-700">
               <div className="relative flex items-center">
                 <i className={`fa-solid ${searchQuery ? 'fa-spinner animate-spin' : 'fa-magnifying-glass'} absolute left-3 z-10 text-gray-400 dark:text-gray-300`}></i>
                 <input
