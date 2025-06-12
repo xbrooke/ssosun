@@ -16,18 +16,11 @@ jobs:
           version: 8
       - uses: actions/setup-node@v3
         with:
-          node-version: 22.16.0
+          node-version: 20
           cache: 'pnpm'
       - run: pnpm install
       - run: pnpm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist
-
-      - name: Deploy to branch
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
