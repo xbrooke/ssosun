@@ -29,7 +29,7 @@ export default function Sidebar() {
     { to: '/', icon: 'fab fa-github-alt', text: '所有应用' },
     { to: '/featured', icon: 'fas fa-book', text: '教程中心' },
     { to: '/wallpaper', icon: 'fas fa-image', text: '车机壁纸' },
-    { to: '/settings', icon: 'fas fa-mobile-screen', text: '应用管理' },
+    { to: '/settings', icon: 'fas fa-gear', text: '安卓设置' },
     { to: '/donate', icon: 'fas fa-heart', text: '赞赏支持' }
   ];
 
