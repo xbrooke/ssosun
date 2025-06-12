@@ -17,16 +17,62 @@ export default function Settings() {
   const openAndroidSettings = () => {
     setIsLoading(true);
     try {
-      // 尝试通过intent打开系统设置
       if (isAndroid) {
-        window.location.href = 'android.settings.SETTINGS';
+        // 尝试多种跳转方式
+        const tryOpenSettings = () => {
+          // 方式1: 使用标准的Android intent URI
+          const intentUri = 'intent:#Intent;action=android.settings.SETTINGS;end';
+          
+          // 方式2: 使用通用设置路径
+          const settingsUri = 'package:com.android.settings';
+          
+          // 方式3: 使用系统设置路径
+          const systemSettingsUri = 'android.settings.SETTINGS';
+
+          // 尝试iframe方式
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = intentUri;
+          document.body.appendChild(iframe);
+          
+          // 尝试直接跳转
+          try {
+            window.location.href = intentUri;
+          } catch (e) {
+            console.log('方式1失败，尝试方式2');
+            try {
+              window.location.href = settingsUri;
+            } catch (e) {
+              console.log('方式2失败，尝试方式3');
+              try {
+                // 使用Android intent API
+                if (window.android && typeof window.android.startActivity === 'function') {
+                  window.android.startActivity(systemSettingsUri);
+                }
+              } catch (e) {
+                console.error('所有方式尝试失败');
+                throw new Error('无法找到有效的设置路径');
+              }
+            }
+          }
+        };
+
+        tryOpenSettings();
+        
+        // 设置超时检测
+        setTimeout(() => {
+          if (!document.hidden) {
+            toast.error('无法打开系统设置，请确保应用有相应权限');
+          }
+          setIsLoading(false);
+        }, 1500);
       } else {
         toast.error('此功能仅在安卓设备上可用');
+        setIsLoading(false);
       }
     } catch (error) {
-      toast.error('无法打开系统设置');
       console.error('打开系统设置失败:', error);
-    } finally {
+      toast.error(`打开设置失败: ${error instanceof Error ? error.message : '未知错误'}`);
       setIsLoading(false);
     }
   };
@@ -47,7 +93,7 @@ export default function Settings() {
               点击下方按钮可直接跳转到安卓系统设置界面
             </p>
             
-            <motion.button
+             <motion.button
               onClick={openAndroidSettings}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -59,12 +105,12 @@ export default function Settings() {
               {isLoading ? (
                 <>
                   <i className="fa-solid fa-spinner animate-spin mr-2"></i>
-                  正在跳转...
+                  {isAndroid ? '正在跳转...' : '检测设备...'}
                 </>
               ) : (
                 <>
                   <i className="fa-solid fa-gear mr-2"></i>
-                  打开系统设置
+                  {isAndroid ? '打开系统设置' : '非安卓设备'}
                 </>
               )}
             </motion.button>
