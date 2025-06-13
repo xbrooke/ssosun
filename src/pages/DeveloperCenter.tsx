@@ -10,13 +10,21 @@ export default function DeveloperCenter() {
   const { isMobile } = useDeviceDetect();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('devAuth') === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fileManagerLoading, setFileManagerLoading] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isWebView, setIsWebView] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // 初始化认证状态
+  useEffect(() => {
+    console.log('初始化认证状态检查...');
+    const authStatus = localStorage.getItem('devAuth') === 'true';
+    setIsAuthenticated(authStatus);
+    setInitialized(true);
+    console.log(`认证状态初始化完成: ${authStatus}`);
+  }, []);
 
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();
@@ -174,6 +182,27 @@ WebView环境: ${isWebView ? '是' : '否'}
       toast.error('复制失败，请手动复制');
     });
   };
+
+  // 显示加载状态
+  if (!initialized) {
+    return (
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md bg-white dark:bg-gray-800 rounded-[12px] p-8 shadow-lg text-center"
+          >
+            <i className="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"></i>
+            <h2 className="text-2xl font-bold">加载中...</h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              正在检查认证状态
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     const qrCodePrompt = encodeURIComponent('WeChat Official Account QR code, clean design, white background, centered, Flyme Auto 1.8 style');

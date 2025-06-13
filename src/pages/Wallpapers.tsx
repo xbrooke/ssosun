@@ -1,9 +1,11 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useState, useCallback } from 'react';
 import { wallpapers, wallpaperCategories } from '@/data/wallpapers';
+
 
 const SearchBox = React.memo(({ searchQuery, setSearchQuery }: {
   searchQuery: string;
