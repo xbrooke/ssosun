@@ -198,37 +198,41 @@ export default function DeveloperCenter() {
           console.log('使用com.android.filemanager包名跳转失败，尝试其他方案:', e);
         }
 
-        // 方案1: 尝试WebView Bridge方式
-        if (isWebView && window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
+        // 方案1: 尝试WebView Bridge方式 (类似系统设置跳转)
+        if (isWebView) {
           try {
-            window.AndroidBridge.openFileManager();
-            setTimeout(() => {
-              if (!document.hidden) {
-                toast('如果未跳转，请尝试其他方案');
-              }
-              setFileManagerLoading(false);
-            }, 1500);
-            return;
+            if (window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
+              window.AndroidBridge.openFileManager();
+              setTimeout(() => {
+                if (!document.hidden) {
+                  toast('如果未跳转，请尝试其他方案');
+                }
+                setFileManagerLoading(false);
+              }, 1500);
+              return;
+            }
           } catch (e) {
-            console.log('方案1失败，尝试方案2:', e);
+            console.log('WebView Bridge方式跳转失败:', e);
           }
         }
 
-        // 方案2: 尝试Intent方式
-        if (isWebView) {
-          try {
-            const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
-            window.location.href = intentUri;
-            setTimeout(() => {
-              if (!document.hidden) {
-                toast('如果未跳转，请尝试方案3');
-              }
-              setFileManagerLoading(false);
-            }, 1500);
-            return;
-          } catch (e) {
-            console.log('方案2失败，尝试方案3:', e);
-          }
+        // 方案2: 尝试Intent方式 (类似系统设置跳转)
+        try {
+          const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = intentUri;
+          document.body.appendChild(iframe);
+          
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast('如果未跳转，请尝试手动打开文件管理器');
+            }
+            setFileManagerLoading(false);
+          }, 1500);
+          return;
+        } catch (e) {
+          console.log('Intent方式跳转失败:', e);
         }
 
         // 方案3: 尝试通用文件URI
@@ -242,7 +246,7 @@ export default function DeveloperCenter() {
           }, 1500);
           return;
         } catch (e) {
-          console.log('方案3失败:', e);
+          console.log('通用文件URI跳转失败:', e);
         }
 
         // 所有方案都失败
