@@ -31,7 +31,7 @@ export default function Carousel({ apps }: CarouselProps) {
           >
             <Link 
               to={`/app/${app.id}`}
-              className="mx-4 flex h-80 w-64 flex-col items-center rounded-[16px] bg-white p-6 shadow-lg transition-all hover:shadow-xl dark:bg-[var(--color-bg-secondary)]"
+              className="mx-4 flex h-80 w-64 flex-col items-center rounded-[4px] bg-white p-6 shadow-lg transition-all hover:shadow-xl dark:bg-[var(--color-bg-secondary)]"
               style={{ 
                 transition: 'all var(--transition-duration) var(--transition-easing)',
                 transformOrigin: 'center bottom'
