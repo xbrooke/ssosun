@@ -4,6 +4,55 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useTheme, useDeviceDetect } from '@/hooks/useTheme';
 
+// 网络状态hook
+const useNetworkStatus = () => {
+  const [networkStatus, setNetworkStatus] = useState({
+    online: navigator.onLine,
+    type: navigator.connection?.effectiveType || 'unknown',
+    downlink: navigator.connection?.downlink || 0,
+    rtt: navigator.connection?.rtt || 0,
+    saveData: navigator.connection?.saveData || false
+  });
+
+  useEffect(() => {
+    const updateNetworkStatus = () => {
+      setNetworkStatus({
+        online: navigator.onLine,
+        type: navigator.connection?.effectiveType || 'unknown',
+        downlink: navigator.connection?.downlink || 0,
+        rtt: navigator.connection?.rtt || 0,
+        saveData: navigator.connection?.saveData || false
+      });
+    };
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    navigator.connection?.addEventListener('change', updateNetworkStatus);
+
+    return () => {
+      window.removeEventListener('online', updateNetworkStatus);
+      window.removeEventListener('offline', updateNetworkStatus);
+      navigator.connection?.removeEventListener('change', updateNetworkStatus);
+    };
+  }, []);
+
+  return networkStatus;
+};
+
+// 导出调试信息为文件
+const exportDebugInfo = (data: string) => {
+  const blob = new Blob([data], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `debug-info-${new Date().toISOString().slice(0, 10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+
 
 export default function DeveloperCenter() {
   const { isDark, theme } = useTheme();
@@ -16,6 +65,8 @@ export default function DeveloperCenter() {
   const [isAndroid, setIsAndroid] = useState(false);
   const [isWebView, setIsWebView] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const networkStatus = useNetworkStatus();
+
 
   // 初始化认证状态
   useEffect(() => {
@@ -168,20 +219,47 @@ export default function DeveloperCenter() {
     }
   };
 
-  const copyDebugInfo = () => {
-    const debugInfo = `调试信息：
+  const getDebugInfo = () => {
+    return `=== 系统调试信息 ===
+时间: ${new Date().toLocaleString()}
 设备类型: ${isAndroid ? 'Android' : '非Android'}
 WebView环境: ${isWebView ? '是' : '否'}
 当前主题: ${theme}
+
+=== 设备信息 ===
 用户代理: ${navigator.userAgent}
-屏幕分辨率: ${window.screen.width}x${window.screen.height}`;
-    
-    navigator.clipboard.writeText(debugInfo).then(() => {
+屏幕分辨率: ${window.screen.width}x${window.screen.height}
+设备内存: ${navigator.deviceMemory || '未知'} GB
+CPU核心数: ${navigator.hardwareConcurrency || '未知'}
+操作系统: ${navigator.platform}
+用户语言: ${navigator.language}
+
+=== 网络状态 ===
+在线状态: ${networkStatus.online ? '在线' : '离线'}
+连接类型: ${networkStatus.type}
+下载速度: ${networkStatus.downlink} Mbps
+延迟时间: ${networkStatus.rtt} ms
+节省数据模式: ${networkStatus.saveData ? '开启' : '关闭'}
+
+=== 应用信息 ===
+应用版本: v2.4.0
+构建时间: 2025-06-10
+IP地址: ${window.location.hostname || '未知'}`;
+  };
+
+  const copyDebugInfo = () => {
+    navigator.clipboard.writeText(getDebugInfo()).then(() => {
       toast.success('调试信息已复制到剪贴板');
     }).catch(() => {
       toast.error('复制失败，请手动复制');
     });
   };
+
+  const exportDebugInfoToFile = () => {
+    exportDebugInfo(getDebugInfo());
+    toast.success('调试信息已导出为文件');
+  };
+
 
   // 显示加载状态
   if (!initialized) {
@@ -302,13 +380,36 @@ WebView环境: ${isWebView ? '是' : '否'}
               transition={{ delay: 0.1 }}
               className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
             >
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <i className="fas fa-info-circle mr-2 text-green-500"></i>
-                系统信息
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center">
+                  <i className="fas fa-info-circle mr-2 text-green-500"></i>
+                  系统与调试信息
+                </h2>
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={copyDebugInfo}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-3 py-1.5 rounded-[4px] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium"
+                  >
+                    <i className="fa-solid fa-copy mr-1"></i>
+                    复制
+                  </motion.button>
+                  <motion.button
+                    onClick={exportDebugInfoToFile}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-3 py-1.5 rounded-[4px] bg-[var(--color-primary)] text-white text-sm font-medium"
+                  >
+                    <i className="fa-solid fa-download mr-1"></i>
+                    导出
+                  </motion.button>
+                </div>
+
+              </div>
               <div className="space-y-3">
                 <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">版本</span>
+                  <span className="text-gray-600 dark:text-gray-300">应用版本</span>
                   <span className="font-medium">v2.4.0</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
@@ -320,6 +421,30 @@ WebView环境: ${isWebView ? '是' : '否'}
                   <span className="font-medium">{window.location.hostname || '未知'}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">用户代理</span>
+                  <span className="font-medium text-xs">{navigator.userAgent}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">连接类型</span>
+                  <span className="font-medium">{navigator.connection ? navigator.connection.effectiveType : '未知'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">在线状态</span>
+                  <span className="font-medium">{navigator.onLine ? '在线' : '离线'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">设备内存</span>
+                  <span className="font-medium">{navigator.deviceMemory || '未知'} GB</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">CPU核心数</span>
+                  <span className="font-medium">{navigator.hardwareConcurrency || '未知'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">屏幕分辨率</span>
+                  <span className="font-medium">{window.screen.width}x{window.screen.height}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-gray-600 dark:text-gray-300">设备类型</span>
                   <span className="font-medium">{isMobile ? '移动设备' : '桌面设备'}</span>
                 </div>
@@ -327,39 +452,18 @@ WebView环境: ${isWebView ? '是' : '否'}
                   <span className="text-gray-600 dark:text-gray-300">操作系统</span>
                   <span className="font-medium">{navigator.platform}</span>
                 </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">用户语言</span>
+                  <span className="font-medium">{navigator.language}</span>
+                </div>
                 <div className="flex justify-between py-2">
-                  <span className="text-gray-600 dark:text-gray-300">浏览器</span>
-                  <span className="font-medium">{navigator.userAgent.split(') ')[0].split('(')[1]}</span>
+                  <span className="text-gray-600 dark:text-gray-300">当前主题</span>
+                  <span className="font-medium">{theme}</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* 系统信息区块 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
-            >
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <i className="fas fa-info-circle mr-2 text-green-500"></i>
-                系统信息
-              </h2>
-              <div className="space-y-3">
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">版本</span>
-                  <span className="font-medium">v2.4.0</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">构建时间</span>
-                  <span className="font-medium">2025-06-10</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-600 dark:text-gray-300">API状态</span>
-                  <span className="font-medium text-green-500">正常</span>
-                </div>
-              </div>
-            </motion.div>
+
 
             {/* 系统设置区块 */}
             <motion.div
@@ -407,16 +511,16 @@ WebView环境: ${isWebView ? '是' : '否'}
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                     点击下方按钮可直接跳转到系统文件管理器
                   </p>
-                  <motion.button
+                   <motion.button
                     onClick={openFileManager}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    disabled={isLoading}
+                    disabled={fileManagerLoading}
                     className={`w-full px-4 py-2 rounded-[4px] font-medium ${
-                      isLoading ? 'bg-gray-300 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
+                      fileManagerLoading ? 'bg-gray-300 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
                     } text-white shadow-sm transition-colors`}
                   >
-                    {isLoading ? (
+                    {fileManagerLoading ? (
                       <>
                         <i className="fa-solid fa-spinner animate-spin mr-2"></i>
                         {isAndroid ? '正在跳转...' : '检测设备...'}
@@ -432,56 +536,7 @@ WebView环境: ${isWebView ? '是' : '否'}
               </div>
             </motion.div>
 
-            {/* 网络信息区块 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center">
-                  <i className="fas fa-network-wired mr-2 text-purple-500"></i>
-                  网络信息
-                </h2>
-                <motion.button
-                  onClick={copyDebugInfo}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-4 py-2 rounded-[2px] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium"
-                >
-                  <i className="fa-solid fa-copy mr-2"></i>
-                  复制信息
-                </motion.button>
-              </div>
-              
-              <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                <div className="flex">
-                  <span className="w-24 font-medium">IP地址:</span>
-                  <span>{window.location.hostname || '未知'}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-24 font-medium">连接类型:</span>
-                  <span>{navigator.connection ? navigator.connection.effectiveType : '未知'}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-24 font-medium">在线状态:</span>
-                  <span>{navigator.onLine ? '在线' : '离线'}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-24 font-medium">设备内存:</span>
-                  <span>{navigator.deviceMemory || '未知'} GB</span>
-                </div>
-                <div className="flex">
-                  <span className="w-24 font-medium">CPU核心数:</span>
-                  <span>{navigator.hardwareConcurrency || '未知'}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-24 font-medium">用户语言:</span>
-                  <span>{navigator.language}</span>
-                </div>
-              </div>
-            </motion.div>
+
           </div>
         </div>
       </div>

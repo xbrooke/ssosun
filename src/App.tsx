@@ -5,6 +5,7 @@ import AppDetail from "@/pages/AppDetail";
 import Featured from "@/pages/Featured";
 import Wallpapers from "@/pages/Wallpapers";
 import Donate from "@/pages/Donate";
+import Settings from "@/pages/Settings";
 import { Empty } from "@/components/Empty";
 import { createContext, useState, Suspense, useEffect } from "react";
 import { useTheme } from "@/hooks/useTheme";
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="/wallpaper/:id" element={<Wallpapers />} />
             <Route path="/developer" element={<DeveloperCenter />} />
             <Route path="/donate" element={<Donate />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </Suspense>
       </AuthContext.Provider>
