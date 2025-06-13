@@ -216,7 +216,31 @@ export default function DeveloperCenter() {
           }
         }
 
-        // 方案2: 尝试Intent方式 (类似系统设置跳转)
+        // 方案2: 浏览器环境下的跳转方案
+        if (!isWebView) {
+          try {
+            // 尝试直接打开文件管理器URI
+            window.open('content://com.android.externalstorage.documents/root/primary');
+            
+            // 备用方案：使用iframe跳转
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = 'content://com.android.externalstorage.documents/root/primary';
+            document.body.appendChild(iframe);
+            
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast('如果未跳转，请尝试手动打开文件管理器');
+              }
+              setFileManagerLoading(false);
+            }, 1500);
+            return;
+          } catch (e) {
+            console.log('浏览器跳转方案失败:', e);
+          }
+        }
+
+        // 方案3: 尝试Intent方式 (类似系统设置跳转)
         try {
           const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
           const iframe = document.createElement('iframe');
@@ -235,7 +259,7 @@ export default function DeveloperCenter() {
           console.log('Intent方式跳转失败:', e);
         }
 
-        // 方案3: 尝试通用文件URI
+        // 方案4: 尝试通用文件URI
         try {
           window.open('content://com.android.externalstorage.documents/root/primary');
           setTimeout(() => {
