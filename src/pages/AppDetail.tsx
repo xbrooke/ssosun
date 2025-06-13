@@ -37,7 +37,7 @@ export default function AppDetail() {
              <div className="flex-shrink-0">
                <motion.div 
                  whileHover={{ scale: 1.02 }}
-                  className="p-2 bg-white dark:bg-gray-800 rounded-[4px] shadow-lg"
+                 className="p-2 bg-white dark:bg-gray-800 rounded-[12px] shadow-lg"
                >
                  <div className="relative h-40 w-40">
                    <div className="absolute inset-0 bg-gray-100 dark:bg-gray-700 rounded-[12px] animate-pulse"></div>

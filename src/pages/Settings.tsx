@@ -1,308 +1,231 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
-interface SettingsProps {
-  // 可添加props定义
-}
-
-declare global {
-  interface Window {
-    android?: {
-      startActivity?: (action: string) => void;
-    };
-    webkit?: {
-      messageHandlers?: {
-        startActivity?: {
-          postMessage: (action: string) => void;
-        };
-      };
-    };
-  }
-}
-
-export default function Settings(props: SettingsProps) {
-  const [isAndroid, setIsAndroid] = useState(false);
+/**
+ * 安卓设置跳转方案说明：
+ * 1. WebView环境优先方案：
+ *    - 通过Android Bridge直接调用原生API
+ *    - 使用intent URI跳转(需要WebView配置支持)
+ * 2. 普通浏览器环境方案：
+ *    - 尝试多种intent URI格式
+ *    - 使用iframe方式触发intent
+ *    - 直接调用Android JS接口(如果存在)
+ * 3. 错误处理：
+ *    - 超时检测
+ *    - 多种方案回退机制
+ *    - 详细的用户反馈
+ */
+export default function Settings() {
+  const { isDark, theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
-  const [browserName, setBrowserName] = useState('');
-  const [browserType, setBrowserType] = useState<'wechat'|'alipay'|'qq'|'system'|'other'>('other');
-  const [osName, setOsName] = useState('');
-  const [debugInfo, setDebugInfo] = useState('');
-  const [showDebug, setShowDebug] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [isWebView, setIsWebView] = useState(false);
+
   useEffect(() => {
-    const ua = navigator.userAgent.toLowerCase();
-    const isAndroidDevice = /android/.test(ua);
-    setIsAndroid(isAndroidDevice);
-
-    // 检测操作系统
-    if (isAndroidDevice) {
-      setOsName('Android');
-    } else if (/iphone|ipad|ipod/.test(ua)) {
-      setOsName('iOS');
-    } else if (/mac os/.test(ua)) {
-      setOsName('macOS');
-    } else if (/windows/.test(ua)) {
-      setOsName('Windows');
-    } else {
-      setOsName('未知系统');
-    }
-
-    // 更精确的浏览器检测
-    if (/micromessenger/.test(ua)) {
-      setBrowserName('微信内置浏览器');
-      setBrowserType('wechat');
-    } else if (/alipayclient/.test(ua)) {
-      setBrowserName('支付宝内置浏览器');
-      setBrowserType('alipay');
-    } else if (/qq\//.test(ua)) {
-      setBrowserName('QQ内置浏览器');
-      setBrowserType('qq');
-    } else if (/chrome/.test(ua)) {
-      setBrowserName('Chrome浏览器');
-      setBrowserType('system');
-    } else if (/firefox/.test(ua)) {
-      setBrowserName('Firefox浏览器');
-      setBrowserType('system');
-    } else if (/safari/.test(ua)) {
-      setBrowserName('Safari浏览器');
-      setBrowserType('system');
-    } else {
-      setBrowserName('其他浏览器');
-      setBrowserType('other');
-    }
-
-    // 收集调试信息
-    setDebugInfo(`
-      用户代理: ${navigator.userAgent}
-      平台: ${navigator.platform}
-      语言: ${navigator.language}
-      设备内存: ${(navigator as any).deviceMemory || '未知'}GB
-      并发硬件: ${navigator.hardwareConcurrency || '未知'}
-    `);
+    // 检测运行环境
+    const userAgent = navigator.userAgent.toLowerCase();
+    setIsAndroid(/android/.test(userAgent));
+    setIsWebView(/(webview|wv)/.test(userAgent));
   }, []);
 
-  const openAndroidSettings = async () => {
-    if (!isAndroid) {
-      toast.error(`此功能仅在安卓设备上可用，当前系统: ${osName}`);
-      return;
-    }
-
-    setIsLoading(true);
-    let success = false;
-    const startTime = Date.now();
-    let debugLog = `开始尝试打开设置 (${new Date().toLocaleTimeString()})\n`;
-
+  /**
+   * 尝试WebView环境下的跳转方案
+   */
+  const tryWebViewApproach = () => {
     try {
-      debugLog += `检测到浏览器类型: ${browserType}\n`;
-
-      // 层级1: 直接调用原生JSBridge
-      if (window.android?.startActivity) {
-        debugLog += '尝试通过原生JSBridge调用...\n';
-        window.android.startActivity('android.settings.SETTINGS');
-        success = true;
-        debugLog += 'JSBridge调用成功\n';
-      } 
-      // 层级2: 调用webkit message handlers (iOS/Android混合应用)
-      else if (window.webkit?.messageHandlers?.startActivity) {
-        debugLog += '尝试通过webkit message handlers调用...\n';
-        window.webkit.messageHandlers.startActivity.postMessage('android.settings.SETTINGS');
-        success = true;
-        debugLog += 'webkit调用成功\n';
+      // 方案1: 通过Android Bridge直接调用
+      if (window.AndroidBridge && typeof window.AndroidBridge.openSettings === 'function') {
+        window.AndroidBridge.openSettings();
+        return true;
       }
-      // 层级3: 尝试多种intent URI方案
-      else {
-        debugLog += '尝试通过intent URI方案调用...\n';
-        const intentUris = [
-          'intent://settings#Intent;scheme=android-app;action=android.settings.SETTINGS;end',
-          'intent:#Intent;action=android.settings.SETTINGS;launchFlags=0x10000000;end',
-          'intent:#Intent;action=android.settings.SETTINGS;S.browser_fallback_url=https://support.google.com/android/answer/9075928;end',
-          'intent:#Intent;package=com.android.settings;action=android.settings.SETTINGS;end',
-          'intent:#Intent;component=com.android.settings/.Settings;end',
-          // 新增更多intent URI方案
-          'intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;component=com.android.settings/.Settings;end',
-          'intent:#Intent;action=android.settings.SETTINGS;launchFlags=0x10000000;package=com.android.settings;end',
-          'intent:#Intent;action=android.settings.SETTINGS;S.android=settings;end',
-          'intent:#Intent;action=android.settings.SETTINGS;B.android=settings;end'
-        ];
-
-        for (const uri of intentUris) {
-          try {
-            debugLog += `尝试URI: ${uri}\n`;
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = uri;
-            document.body.appendChild(iframe);
-            setTimeout(() => document.body.removeChild(iframe), 1000);
-            success = true;
-            debugLog += 'URI调用成功\n';
-            break;
-          } catch (e) {
-            debugLog += `URI调用失败: ${e instanceof Error ? e.message : '未知错误'}\n`;
-            continue;
-          }
-        }
-      }
-
-      // 层级4: 尝试直接URL scheme
-      if (!success) {
-        debugLog += '尝试通过URL scheme调用...\n';
-        try {
-          window.location.href = 'settings://';
-          debugLog += 'URL scheme调用成功\n';
-          success = true;
-        } catch (e) {
-          debugLog += `URL scheme调用失败: ${e instanceof Error ? e.message : '未知错误'}\n`;
-        }
-      }
-
-      // 检查是否成功跳转
-      setTimeout(() => {
-        const elapsedTime = Date.now() - startTime;
-        debugLog += `操作耗时: ${elapsedTime}ms\n`;
-        
-        if (!document.hidden) {
-          debugLog += '页面未隐藏，跳转可能失败\n';
-          // 特殊浏览器处理
-          if (browserType === 'wechat') {
-            toast('微信浏览器限制较多，请点击右上角菜单选择"在浏览器打开"');
-            debugLog += '微信浏览器限制跳转\n';
-          } else if (browserType === 'alipay' || browserType === 'qq') {
-            toast('当前浏览器限制跳转，请长按复制链接到系统浏览器打开');
-            debugLog += '支付宝/QQ浏览器限制跳转\n';
-          } else {
-            toast.error('跳转失败，请尝试其他方式');
-            debugLog += '跳转失败\n';
-          }
-        } else {
-          debugLog += '页面已隐藏，跳转可能成功\n';
-          success = true;
-        }
-
-        setIsLoading(false);
-        setDebugInfo(debugLog);
-      }, 1500);
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : '未知错误';
-      debugLog += `捕获到错误: ${errorMsg}\n`;
-      setIsLoading(false);
-      toast.error('跳转失败: ' + errorMsg);
-      setDebugInfo(debugLog);
       
-      // 提供备选方案
-      if (browserType === 'system') {
-        toast.info('您可以尝试手动打开手机设置 -> 系统设置');
+      // 方案2: 使用intent URI跳转
+      const intentUri = `intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;end`;
+      window.location.href = intentUri;
+      return true;
+    } catch (e) {
+      console.error('WebView跳转失败:', e);
+      return false;
+    }
+  };
+
+  /**
+   * 尝试普通浏览器环境下的跳转方案
+   */
+  const tryBrowserApproach = () => {
+    try {
+      // 方案1: 标准intent URI
+      const intentUri = 'intent:#Intent;action=android.settings.SETTINGS;end';
+      
+      // 方案2: 使用iframe触发intent
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = intentUri;
+      document.body.appendChild(iframe);
+      
+      // 方案3: 直接调用Android JS接口
+      if (window.android && typeof window.android.startActivity === 'function') {
+        window.android.startActivity('android.settings.SETTINGS');
+        return true;
       }
+      
+      return false;
+    } catch (e) {
+      console.error('浏览器跳转失败:', e);
+      return false;
+    }
+  };
+
+  const openAndroidSettings = () => {
+    setIsLoading(true);
+    try {
+      if (isAndroid) {
+        // WebView环境优先尝试专用方案
+        if (isWebView && tryWebViewApproach()) {
+          // 设置超时检测
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast.error('请在WebView配置中添加intent跳转支持');
+            }
+            setIsLoading(false);
+          }, 1500);
+          return;
+        }
+
+        // 普通浏览器环境尝试
+        if (tryBrowserApproach()) {
+          // 设置超时检测
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast.error('无法打开系统设置，请确保应用有相应权限');
+            }
+            setIsLoading(false);
+          }, 1500);
+          return;
+        }
+
+        throw new Error('所有跳转方案尝试失败');
+      } else {
+        toast.error('此功能仅在安卓设备上可用');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('打开系统设置失败:', error);
+      toast.error(`打开设置失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setIsLoading(false);
     }
   };
 
   const copyDebugInfo = () => {
-    navigator.clipboard.writeText(debugInfo);
-    toast.success('调试信息已复制');
+    const debugInfo = `调试信息：
+设备类型: ${isAndroid ? 'Android' : '非Android'}
+WebView环境: ${isWebView ? '是' : '否'}
+当前主题: ${theme}
+用户代理: ${navigator.userAgent}
+屏幕分辨率: ${window.screen.width}x${window.screen.height}`;
+    
+    navigator.clipboard.writeText(debugInfo).then(() => {
+      toast.success('调试信息已复制到剪贴板');
+    }).catch(() => {
+      toast.error('复制失败，请手动复制');
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 text-gray-900 dark:text-white">
-      <motion.div
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-xl mx-auto"
-      >
-        <h1 className="text-2xl font-bold mb-4">打开系统设置（安卓）</h1>
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      <div className="flex-1 p-4 md:p-8 text-gray-800 dark:text-gray-100">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-3xl mx-auto space-y-6"
+        >
+          <h1 className="text-2xl font-bold">系统设置</h1>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm">
+            <h2 className="text-xl font-medium mb-4">安卓系统设置</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              点击下方按钮可直接跳转到安卓系统设置界面
+            </p>
+            
+            <motion.button
+              onClick={openAndroidSettings}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={isLoading}
+              className={`w-full md:w-auto px-6 py-3 rounded-[4px] font-medium ${
+                isLoading ? 'bg-gray-300 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
+              } text-white shadow-sm transition-colors`}
+            >
+              {isLoading ? (
+                <>
+                  <i className="fa-solid fa-spinner animate-spin mr-2"></i>
+                  {isAndroid ? '正在跳转...' : '检测设备...'}
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-gear mr-2"></i>
+                  {isAndroid ? '打开系统设置' : '非安卓设备'}
+                </>
+              )}
+            </motion.button>
+            
+            {!isAndroid && (
+              <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-[4px] text-sm">
+                <i className="fa-solid fa-triangle-exclamation mr-2"></i>
+                此功能仅在安卓设备上可用
+              </div>
+            )}
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
-          <div className="mb-4">
-            <p className="mb-2">
-              本功能尝试通过浏览器直接打开安卓系统设置页面。
-            </p>
-            <p>
-              当前环境：
-              <span className="font-semibold text-blue-600 dark:text-blue-300 ml-2">
-                {osName} · {browserName}
-              </span>
-            </p>
+            {isWebView && (
+              <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-[4px] text-sm">
+                <i className="fa-solid fa-info-circle mr-2"></i>
+                检测到WebView环境，可能需要额外配置才能打开系统设置
+              </div>
+            )}
           </div>
 
-          {isAndroid ? (
-            <>
+          {/* 新增调试信息版块 */}
+          <div className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-medium">调试信息</h2>
               <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={openAndroidSettings}
-                disabled={isLoading}
-                className={`w-full md:w-auto px-6 py-3 rounded-lg font-medium text-white shadow ${
-                  isLoading
-                    ? 'bg-gray-400 dark:bg-gray-600'
-                    : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
-                }`}
+                onClick={copyDebugInfo}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-4 py-2 rounded-[4px] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium"
               >
-                {isLoading ? (
-                  <>
-                    <i className="fa-solid fa-spinner animate-spin mr-2"></i>
-                    正在尝试打开设置...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-gear mr-2"></i>
-                    打开系统设置
-                  </>
-                )}
+                <i className="fa-solid fa-copy mr-2"></i>
+                复制信息
               </motion.button>
-
-              <div className="mt-4 space-y-3">
-                {browserType !== 'system' && (
-                  <div className={`p-3 rounded text-sm ${
-                    browserType === 'wechat' 
-                      ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-100'
-                      : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
-                  }`}>
-                    <i className={`fa-solid ${
-                      browserType === 'wechat' ? 'fa-triangle-exclamation' : 'fa-info-circle'
-                    } mr-1`}></i>
-                    {browserType === 'wechat' 
-                      ? '微信浏览器限制较多，建议复制链接到系统浏览器打开'
-                      : '当前浏览器可能限制跳转，如失败请使用系统浏览器'}
-                  </div>
-                )}
-
-                <button 
-                  onClick={() => setShowDebug(!showDebug)}
-                  className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  {showDebug ? '隐藏调试信息' : '显示调试信息'}
-                </button>
-
-                {showDebug && (
-                  <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs whitespace-pre-wrap font-mono">
-                    {debugInfo}
-                    <button 
-                      onClick={copyDebugInfo}
-                      className="mt-2 px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-xs"
-                    >
-                      复制调试信息
-                    </button>
-                  </div>
-                )}
+            </div>
+            
+            <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+              <div className="flex">
+                <span className="w-24 font-medium">设备类型:</span>
+                <span>{isAndroid ? 'Android' : '非Android'}</span>
               </div>
-            </>
-          ) : (
-            <div className="p-4 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 rounded-lg">
-              <div className="flex items-start">
-                <i className="fa-solid fa-triangle-exclamation mt-1 mr-2"></i>
-                <div>
-                  <p className="font-medium">此功能仅适用于安卓设备</p>
-                  <p className="text-sm mt-1">
-                    当前设备运行的是 {osName} 系统，无法使用此功能。
-                    {osName === 'iOS' && ' 请使用安卓设备访问此功能。'}
-                  </p>
-                </div>
+              <div className="flex">
+                <span className="w-24 font-medium">WebView环境:</span>
+                <span>{isWebView ? '是' : '否'}</span>
+              </div>
+              <div className="flex">
+                <span className="w-24 font-medium">当前主题:</span>
+                <span>{theme}</span>
+              </div>
+              <div className="flex">
+                <span className="w-24 font-medium">屏幕分辨率:</span>
+                <span>{window.screen.width}x{window.screen.height}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="w-24 font-medium">用户代理:</span>
+                <span className="text-xs break-all mt-1">{navigator.userAgent}</span>
               </div>
             </div>
-          )}
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
-
-// 保留原组件名称导出以兼容现有引用
-export const AndroidSettingsJump = Settings;

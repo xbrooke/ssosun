@@ -89,13 +89,13 @@ export default function Sidebar() {
               {/* 移动端关闭按钮 */}
               {isMobile && (
                 <motion.button
-                   onClick={() => setIsOpen(false)}
-                   className="mb-4 self-end rounded-[4px] p-2 hover:bg-[var(--color-primary)]/10"
-                   whileHover={{ scale: 1.1 }}
-                   whileTap={{ scale: 0.95 }}
-                 >
-                   <i className="fa-solid fa-xmark text-lg"></i>
-                 </motion.button>
+                  onClick={() => setIsOpen(false)}
+                  className="mb-4 self-end rounded-[4px] p-2 hover:bg-[var(--color-primary-light)]/10"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <i className="fa-solid fa-xmark text-lg"></i>
+                </motion.button>
               )}
 
               {/* 侧边栏内容 */}
@@ -150,13 +150,13 @@ export default function Sidebar() {
                            <Link 
                              to={item.to}
                              className={`
-                                flex items-center rounded-[4px] p-2.5 text-sm
-                                md:p-2.5 md:text-base
-                                ${location.pathname === item.to 
-                                  ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)]/10'}
-                                transition-all duration-[var(--transition-duration)] ease-[var(--transition-easing)]
-                              `}
+                               flex items-center rounded-[12px] p-3 text-sm
+                               md:p-3 md:text-base
+                               ${location.pathname === item.to 
+                                 ? 'bg-[var(--color-primary)] text-white shadow-primary'
+                                 : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-lightest)]'}
+                               transition-all duration-[var(--transition-duration)] ease-[var(--transition-easing)]
+                             `}
                            >
                              <motion.div
                                className={`

@@ -25,7 +25,7 @@ export default function MobileAppDetail({ app }: MobileAppDetailProps) {
           {/* 应用图标 */}
            <div className="flex-shrink-0">
               <div className="relative h-32 w-32">
-                 <div className="absolute inset-0 bg-white dark:bg-gray-800 rounded-[4px] shadow-md animate-pulse"></div>
+                <div className="absolute inset-0 bg-white dark:bg-gray-800 rounded-[12px] shadow-md animate-pulse"></div>
                 <img
                   src={app.icon}
                   srcSet={`${app.icon} 1x, ${app.icon.replace('.jpg', '@2x.jpg')} 2x`}

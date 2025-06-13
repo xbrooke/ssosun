@@ -107,7 +107,7 @@ export default function Donate() {
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 300 }}
-             className="w-full max-w-4xl p-8 bg-white dark:bg-gray-800 rounded-[4px] shadow-lg"
+            className="w-full max-w-4xl p-8 bg-white dark:bg-gray-800 rounded-[12px] shadow-lg"
           >
             <h1 className="text-2xl font-bold mb-6 text-[var(--color-primary)] text-center">
               <i className="fa-solid fa-heart mr-2"></i>
