@@ -29,7 +29,6 @@ export default function Settings(props: SettingsProps) {
   const [osName, setOsName] = useState('');
   const [debugInfo, setDebugInfo] = useState('');
   const [showDebug, setShowDebug] = useState(false);
-
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
     const isAndroidDevice = /android/.test(ua);
@@ -118,7 +117,12 @@ export default function Settings(props: SettingsProps) {
           'intent:#Intent;action=android.settings.SETTINGS;launchFlags=0x10000000;end',
           'intent:#Intent;action=android.settings.SETTINGS;S.browser_fallback_url=https://support.google.com/android/answer/9075928;end',
           'intent:#Intent;package=com.android.settings;action=android.settings.SETTINGS;end',
-          'intent:#Intent;component=com.android.settings/.Settings;end'
+          'intent:#Intent;component=com.android.settings/.Settings;end',
+          // 新增更多intent URI方案
+          'intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;component=com.android.settings/.Settings;end',
+          'intent:#Intent;action=android.settings.SETTINGS;launchFlags=0x10000000;package=com.android.settings;end',
+          'intent:#Intent;action=android.settings.SETTINGS;S.android=settings;end',
+          'intent:#Intent;action=android.settings.SETTINGS;B.android=settings;end'
         ];
 
         for (const uri of intentUris) {
@@ -139,6 +143,18 @@ export default function Settings(props: SettingsProps) {
         }
       }
 
+      // 层级4: 尝试直接URL scheme
+      if (!success) {
+        debugLog += '尝试通过URL scheme调用...\n';
+        try {
+          window.location.href = 'settings://';
+          debugLog += 'URL scheme调用成功\n';
+          success = true;
+        } catch (e) {
+          debugLog += `URL scheme调用失败: ${e instanceof Error ? e.message : '未知错误'}\n`;
+        }
+      }
+
       // 检查是否成功跳转
       setTimeout(() => {
         const elapsedTime = Date.now() - startTime;
@@ -154,7 +170,7 @@ export default function Settings(props: SettingsProps) {
             toast('当前浏览器限制跳转，请长按复制链接到系统浏览器打开');
             debugLog += '支付宝/QQ浏览器限制跳转\n';
           } else {
-            toast.error('跳转失败，请尝试手动打开系统设置');
+            toast.error('跳转失败，请尝试其他方式');
             debugLog += '跳转失败\n';
           }
         } else {
@@ -250,7 +266,7 @@ export default function Settings(props: SettingsProps) {
 
                 <button 
                   onClick={() => setShowDebug(!showDebug)}
-                  className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   {showDebug ? '隐藏调试信息' : '显示调试信息'}
                 </button>
@@ -266,16 +282,6 @@ export default function Settings(props: SettingsProps) {
                     </button>
                   </div>
                 )}
-              </div>
-
-              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <h3 className="font-medium mb-2">手动打开设置指引：</h3>
-                <ol className="list-decimal pl-5 space-y-1 text-sm">
-                  <li>返回手机主屏幕</li>
-                  <li>找到"设置"应用图标并点击</li>
-                  <li>或在应用列表中找到"设置"应用</li>
-                  <li>部分设备可在通知栏快捷设置中点击设置图标</li>
-                </ol>
               </div>
             </>
           ) : (
