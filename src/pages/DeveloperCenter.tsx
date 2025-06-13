@@ -183,37 +183,71 @@ export default function DeveloperCenter() {
     setFileManagerLoading(true);
     try {
       if (isAndroid) {
-        if (isWebView) {
-          try {
-            if (window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
-              window.AndroidBridge.openFileManager();
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast.error('请在WebView配置中添加文件管理跳转支持');
-                }
-                setFileManagerLoading(false);
-              }, 1500);
-              return;
+        // 方案0: 优先尝试使用com.android.filemanager包名
+        try {
+          const intentUri = `intent:#Intent;action=android.intent.action.VIEW;package=com.android.filemanager;end`;
+          window.location.href = intentUri;
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast('如果未跳转，将尝试其他方案');
             }
-            
-            const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
-            window.location.href = intentUri;
+            setFileManagerLoading(false);
+          }, 1500);
+          return;
+        } catch (e) {
+          console.log('使用com.android.filemanager包名跳转失败，尝试其他方案:', e);
+        }
+
+        // 方案1: 尝试WebView Bridge方式
+        if (isWebView && window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
+          try {
+            window.AndroidBridge.openFileManager();
             setTimeout(() => {
               if (!document.hidden) {
-                toast.error('无法打开文件管理，请确保应用有相应权限');
+                toast('如果未跳转，请尝试其他方案');
               }
               setFileManagerLoading(false);
             }, 1500);
             return;
           } catch (e) {
-            console.error('WebView跳转失败:', e);
-            toast.error(`打开文件管理失败: ${e instanceof Error ? e.message : '未知错误'}`);
-            setFileManagerLoading(false);
+            console.log('方案1失败，尝试方案2:', e);
           }
-        } else {
-          toast.error('此功能仅在WebView环境中可用');
-          setFileManagerLoading(false);
         }
+
+        // 方案2: 尝试Intent方式
+        if (isWebView) {
+          try {
+            const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
+            window.location.href = intentUri;
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast('如果未跳转，请尝试方案3');
+              }
+              setFileManagerLoading(false);
+            }, 1500);
+            return;
+          } catch (e) {
+            console.log('方案2失败，尝试方案3:', e);
+          }
+        }
+
+        // 方案3: 尝试通用文件URI
+        try {
+          window.open('content://com.android.externalstorage.documents/root/primary');
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast('如果未跳转，请手动打开文件管理器');
+            }
+            setFileManagerLoading(false);
+          }, 1500);
+          return;
+        } catch (e) {
+          console.log('方案3失败:', e);
+        }
+
+        // 所有方案都失败
+        toast.error('无法打开文件管理，请手动打开文件管理器');
+        setFileManagerLoading(false);
       } else {
         toast.error('此功能仅在安卓设备上可用');
         setFileManagerLoading(false);
@@ -415,17 +449,60 @@ IP地址: ${window.location.hostname || '未知'}`;
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 系统信息区块 - 增强版 */}
+            {/* 系统信息卡片 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
             >
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <i className="fas fa-desktop mr-2 text-blue-500"></i>
+                系统信息
+              </h2>
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">设备类型</span>
+                  <span className="font-medium">{isMobile ? '移动设备' : '桌面设备'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">操作系统</span>
+                  <span className="font-medium">{navigator.platform}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">屏幕分辨率</span>
+                  <span className="font-medium">{window.screen.width}x{window.screen.height}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">设备内存</span>
+                  <span className="font-medium">{navigator.deviceMemory || '未知'} GB</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">CPU核心数</span>
+                  <span className="font-medium">{navigator.hardwareConcurrency || '未知'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">用户语言</span>
+                  <span className="font-medium">{navigator.language}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600 dark:text-gray-300">当前主题</span>
+                  <span className="font-medium">{theme}</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* 调试信息卡片 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
+            >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold flex items-center">
-                  <i className="fas fa-info-circle mr-2 text-green-500"></i>
-                  系统与调试信息
+                  <i className="fas fa-bug mr-2 text-green-500"></i>
+                  调试信息
                 </h2>
                 <div className="flex gap-2">
                   <motion.button
@@ -447,7 +524,6 @@ IP地址: ${window.location.hostname || '未知'}`;
                     导出
                   </motion.button>
                 </div>
-
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
@@ -470,37 +546,9 @@ IP地址: ${window.location.hostname || '未知'}`;
                   <span className="text-gray-600 dark:text-gray-300">连接类型</span>
                   <span className="font-medium">{navigator.connection ? navigator.connection.effectiveType : '未知'}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between py-2">
                   <span className="text-gray-600 dark:text-gray-300">在线状态</span>
                   <span className="font-medium">{navigator.onLine ? '在线' : '离线'}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">设备内存</span>
-                  <span className="font-medium">{navigator.deviceMemory || '未知'} GB</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">CPU核心数</span>
-                  <span className="font-medium">{navigator.hardwareConcurrency || '未知'}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">屏幕分辨率</span>
-                  <span className="font-medium">{window.screen.width}x{window.screen.height}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">设备类型</span>
-                  <span className="font-medium">{isMobile ? '移动设备' : '桌面设备'}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">操作系统</span>
-                  <span className="font-medium">{navigator.platform}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-300">用户语言</span>
-                  <span className="font-medium">{navigator.language}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-600 dark:text-gray-300">当前主题</span>
-                  <span className="font-medium">{theme}</span>
                 </div>
               </div>
             </motion.div>
@@ -627,7 +675,11 @@ IP地址: ${window.location.hostname || '未知'}`;
                     </div>
                   </div>
 
-                  <ul className="text-sm text-gray-600 dark:text-gray-300 mb-4 space-y-2">
+                   <ul className="text-sm text-gray-600 dark:text-gray-300 mb-4 space-y-2">
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>优先方案：使用com.android.filemanager包名跳转</span>
+                    </li>
                     <li className="flex items-start">
                       <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
                       <span>WebView环境：使用AndroidBridge.openFileManager</span>
