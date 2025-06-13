@@ -143,7 +143,7 @@ WebView环境: ${isWebView ? '是' : '否'}
         >
           <h1 className="text-2xl font-bold">系统设置</h1>
           
-          <div className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-[4px] p-6 shadow-sm">
             <h2 className="text-xl font-medium mb-4">安卓系统设置</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               点击下方按钮可直接跳转到安卓系统设置界面
@@ -172,14 +172,14 @@ WebView环境: ${isWebView ? '是' : '否'}
             </motion.button>
             
             {!isAndroid && (
-              <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-[4px] text-sm">
+               <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-[2px] text-sm">
                 <i className="fa-solid fa-triangle-exclamation mr-2"></i>
                 此功能仅在安卓设备上可用
               </div>
             )}
 
             {isWebView && (
-              <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-[4px] text-sm">
+               <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-[2px] text-sm">
                 <i className="fa-solid fa-info-circle mr-2"></i>
                 检测到WebView环境，可能需要额外配置才能打开系统设置
               </div>
@@ -187,14 +187,14 @@ WebView环境: ${isWebView ? '是' : '否'}
           </div>
 
           {/* 新增调试信息版块 */}
-          <div className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-[4px] p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-medium">调试信息</h2>
               <motion.button
                 onClick={copyDebugInfo}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-4 py-2 rounded-[4px] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium"
+                 className="px-4 py-2 rounded-[2px] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium"
               >
                 <i className="fa-solid fa-copy mr-2"></i>
                 复制信息
@@ -215,12 +215,18 @@ WebView环境: ${isWebView ? '是' : '否'}
                 <span>{theme}</span>
               </div>
               <div className="flex">
+                <span className="w-24 font-medium">跳转方案:</span>
+                <span>{isWebView ? 'WebView专用方案' : '浏览器通用方案'}</span>
+              </div>
+              <div className="flex">
                 <span className="w-24 font-medium">屏幕分辨率:</span>
                 <span>{window.screen.width}x{window.screen.height}</span>
               </div>
-              <div className="flex flex-col">
+               <div className="flex flex-col mt-2">
                 <span className="w-24 font-medium">用户代理:</span>
-                <span className="text-xs break-all mt-1">{navigator.userAgent}</span>
+                <span className="text-xs break-all mt-1 bg-gray-100 dark:bg-gray-700 p-2 rounded-[2px]">
+                  {navigator.userAgent}
+                </span>
               </div>
             </div>
           </div>

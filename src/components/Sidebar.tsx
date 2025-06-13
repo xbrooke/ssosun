@@ -127,12 +127,12 @@ export default function Sidebar() {
                              href={item.to}
                              target="_blank"
                              rel="noopener noreferrer"
-                             className={`
-                               flex items-center rounded-[12px] p-3 text-sm
-                               md:p-3 md:text-base
-                               text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-lightest)]
-                               transition-all duration-[var(--transition-duration)] ease-[var(--transition-easing)]
-                             `}
+                            className={`
+                              flex items-center rounded-[4px] p-3 text-sm
+                              md:p-3 md:text-base
+                              text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-lightest)]
+                              transition-all duration-[var(--transition-duration)] ease-[var(--transition-easing)]
+                            `}
                            >
                              <motion.div 
                                className={`
@@ -149,14 +149,14 @@ export default function Sidebar() {
                          ) : (
                            <Link 
                              to={item.to}
-                             className={`
-                               flex items-center rounded-[12px] p-3 text-sm
-                               md:p-3 md:text-base
-                               ${location.pathname === item.to 
-                                 ? 'bg-[var(--color-primary)] text-white shadow-primary'
-                                 : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-lightest)]'}
-                               transition-all duration-[var(--transition-duration)] ease-[var(--transition-easing)]
-                             `}
+                            className={`
+                              flex items-center rounded-[4px] p-3 text-sm
+                              md:p-3 md:text-base
+                              ${location.pathname === item.to 
+                                ? 'bg-[var(--color-primary)] text-white shadow-primary'
+                                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-lightest)]'}
+                              transition-all duration-[var(--transition-duration)] ease-[var(--transition-easing)]
+                            `}
                            >
                              <motion.div
                                className={`
