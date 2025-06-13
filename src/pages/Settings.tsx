@@ -27,6 +27,8 @@ export default function Settings(props: SettingsProps) {
   const [browserName, setBrowserName] = useState('');
   const [browserType, setBrowserType] = useState<'wechat'|'alipay'|'qq'|'system'|'other'>('other');
   const [osName, setOsName] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
@@ -69,6 +71,15 @@ export default function Settings(props: SettingsProps) {
       setBrowserName('其他浏览器');
       setBrowserType('other');
     }
+
+    // 收集调试信息
+    setDebugInfo(`
+      用户代理: ${navigator.userAgent}
+      平台: ${navigator.platform}
+      语言: ${navigator.language}
+      设备内存: ${(navigator as any).deviceMemory || '未知'}GB
+      并发硬件: ${navigator.hardwareConcurrency || '未知'}
+    `);
   }, []);
 
   const openAndroidSettings = async () => {
@@ -78,69 +89,99 @@ export default function Settings(props: SettingsProps) {
     }
 
     setIsLoading(true);
+    let success = false;
+    const startTime = Date.now();
+    let debugLog = `开始尝试打开设置 (${new Date().toLocaleTimeString()})\n`;
 
     try {
+      debugLog += `检测到浏览器类型: ${browserType}\n`;
+
       // 层级1: 直接调用原生JSBridge
       if (window.android?.startActivity) {
+        debugLog += '尝试通过原生JSBridge调用...\n';
         window.android.startActivity('android.settings.SETTINGS');
+        success = true;
+        debugLog += 'JSBridge调用成功\n';
       } 
       // 层级2: 调用webkit message handlers (iOS/Android混合应用)
       else if (window.webkit?.messageHandlers?.startActivity) {
+        debugLog += '尝试通过webkit message handlers调用...\n';
         window.webkit.messageHandlers.startActivity.postMessage('android.settings.SETTINGS');
+        success = true;
+        debugLog += 'webkit调用成功\n';
       }
       // 层级3: 尝试多种intent URI方案
       else {
+        debugLog += '尝试通过intent URI方案调用...\n';
         const intentUris = [
           'intent://settings#Intent;scheme=android-app;action=android.settings.SETTINGS;end',
           'intent:#Intent;action=android.settings.SETTINGS;launchFlags=0x10000000;end',
-          'intent:#Intent;action=android.settings.SETTINGS;S.browser_fallback_url=https://support.google.com/android/answer/9075928;end'
+          'intent:#Intent;action=android.settings.SETTINGS;S.browser_fallback_url=https://support.google.com/android/answer/9075928;end',
+          'intent:#Intent;package=com.android.settings;action=android.settings.SETTINGS;end',
+          'intent:#Intent;component=com.android.settings/.Settings;end'
         ];
 
-        let success = false;
-        
-        // 尝试所有URI方案
         for (const uri of intentUris) {
           try {
+            debugLog += `尝试URI: ${uri}\n`;
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
             iframe.src = uri;
             document.body.appendChild(iframe);
             setTimeout(() => document.body.removeChild(iframe), 1000);
             success = true;
+            debugLog += 'URI调用成功\n';
             break;
           } catch (e) {
+            debugLog += `URI调用失败: ${e instanceof Error ? e.message : '未知错误'}\n`;
             continue;
           }
-        }
-
-        if (!success) {
-          throw new Error('所有intent方案均失败');
         }
       }
 
       // 检查是否成功跳转
       setTimeout(() => {
+        const elapsedTime = Date.now() - startTime;
+        debugLog += `操作耗时: ${elapsedTime}ms\n`;
+        
         if (!document.hidden) {
+          debugLog += '页面未隐藏，跳转可能失败\n';
           // 特殊浏览器处理
           if (browserType === 'wechat') {
             toast('微信浏览器限制较多，请点击右上角菜单选择"在浏览器打开"');
+            debugLog += '微信浏览器限制跳转\n';
           } else if (browserType === 'alipay' || browserType === 'qq') {
             toast('当前浏览器限制跳转，请长按复制链接到系统浏览器打开');
+            debugLog += '支付宝/QQ浏览器限制跳转\n';
           } else {
             toast.error('跳转失败，请尝试手动打开系统设置');
+            debugLog += '跳转失败\n';
           }
+        } else {
+          debugLog += '页面已隐藏，跳转可能成功\n';
+          success = true;
         }
+
         setIsLoading(false);
+        setDebugInfo(debugLog);
       }, 1500);
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '未知错误';
+      debugLog += `捕获到错误: ${errorMsg}\n`;
       setIsLoading(false);
-      toast.error('跳转失败: ' + (error instanceof Error ? error.message : '未知错误'));
+      toast.error('跳转失败: ' + errorMsg);
+      setDebugInfo(debugLog);
       
       // 提供备选方案
       if (browserType === 'system') {
         toast.info('您可以尝试手动打开手机设置 -> 系统设置');
       }
     }
+  };
+
+  const copyDebugInfo = () => {
+    navigator.clipboard.writeText(debugInfo);
+    toast.success('调试信息已复制');
   };
 
   return (
@@ -191,20 +232,51 @@ export default function Settings(props: SettingsProps) {
                 )}
               </motion.button>
 
-              {browserType !== 'system' && (
-                <div className={`mt-4 p-3 rounded text-sm ${
-                  browserType === 'wechat' 
-                    ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-100'
-                    : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
-                }`}>
-                  <i className={`fa-solid ${
-                    browserType === 'wechat' ? 'fa-triangle-exclamation' : 'fa-info-circle'
-                  } mr-1`}></i>
-                  {browserType === 'wechat' 
-                    ? '微信浏览器限制较多，建议复制链接到系统浏览器打开'
-                    : '当前浏览器可能限制跳转，如失败请使用系统浏览器'}
-                </div>
-              )}
+              <div className="mt-4 space-y-3">
+                {browserType !== 'system' && (
+                  <div className={`p-3 rounded text-sm ${
+                    browserType === 'wechat' 
+                      ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-100'
+                      : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
+                  }`}>
+                    <i className={`fa-solid ${
+                      browserType === 'wechat' ? 'fa-triangle-exclamation' : 'fa-info-circle'
+                    } mr-1`}></i>
+                    {browserType === 'wechat' 
+                      ? '微信浏览器限制较多，建议复制链接到系统浏览器打开'
+                      : '当前浏览器可能限制跳转，如失败请使用系统浏览器'}
+                  </div>
+                )}
+
+                <button 
+                  onClick={() => setShowDebug(!showDebug)}
+                  className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  {showDebug ? '隐藏调试信息' : '显示调试信息'}
+                </button>
+
+                {showDebug && (
+                  <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs whitespace-pre-wrap font-mono">
+                    {debugInfo}
+                    <button 
+                      onClick={copyDebugInfo}
+                      className="mt-2 px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-xs"
+                    >
+                      复制调试信息
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <h3 className="font-medium mb-2">手动打开设置指引：</h3>
+                <ol className="list-decimal pl-5 space-y-1 text-sm">
+                  <li>返回手机主屏幕</li>
+                  <li>找到"设置"应用图标并点击</li>
+                  <li>或在应用列表中找到"设置"应用</li>
+                  <li>部分设备可在通知栏快捷设置中点击设置图标</li>
+                </ol>
+              </div>
             </>
           ) : (
             <div className="p-4 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 rounded-lg">
