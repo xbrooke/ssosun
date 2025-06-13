@@ -115,9 +115,31 @@ export default function DeveloperCenter() {
     console.log('初始化认证状态检查...');
     const authStatus = localStorage.getItem('devAuth') === 'true';
     setIsAuthenticated(authStatus);
+    
+    // 确保路径正确恢复
+    if (authStatus) {
+      console.log('已认证用户，恢复路径状态');
+    } else {
+      console.log('未认证用户，保持当前路径');
+    }
+    
     setInitialized(true);
     console.log(`认证状态初始化完成: ${authStatus}`);
   }, []);
+
+  // 监听路径变化
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (!isAuthenticated && initialized) {
+        console.log('路径变化时检查认证状态');
+        const authStatus = localStorage.getItem('devAuth') === 'true';
+        setIsAuthenticated(authStatus);
+      }
+    };
+    
+    window.addEventListener('popstate', handleRouteChange);
+    return () => window.removeEventListener('popstate', handleRouteChange);
+  }, [isAuthenticated, initialized]);
 
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();
@@ -183,118 +205,161 @@ export default function DeveloperCenter() {
     setFileManagerLoading(true);
     try {
       if (isAndroid) {
-        // 方案1: 优先尝试使用URL Scheme (content://)
-        try {
-          const contentUri = 'content://com.android.externalstorage.documents/root/primary';
-          window.location.href = contentUri;
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast('如果未跳转，将尝试其他方案');
-            }
-            setFileManagerLoading(false);
-          }, 1500);
-          return;
-        } catch (e) {
-          console.log('使用content://跳转失败，尝试其他方案:', e);
-        }
-
-        // 方案2: 尝试使用Intent URL (与系统设置相同的方式)
-        try {
-          const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;package=com.android.filemanager;S.browser_fallback_url=https://filemanager.com;end`;
-          window.location.href = intentUri;
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast('如果未跳转，将尝试其他方案');
-            }
-            setFileManagerLoading(false);
-          }, 1500);
-          return;
-        } catch (e) {
-          console.log('使用Intent URL跳转失败，尝试其他方案:', e);
-        }
-
-        // 方案2: 尝试WebView Bridge方式 (与系统设置相同)
-        if (isWebView) {
-          try {
-            if (window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
-              window.AndroidBridge.openFileManager();
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast('如果未跳转，请尝试其他方案');
-                }
-                setFileManagerLoading(false);
-              }, 1500);
-              return;
-            }
-          } catch (e) {
-            console.log('WebView Bridge方式跳转失败:', e);
-          }
-        }
-
-        // 方案3: 浏览器环境下的跳转方案 (与系统设置相同)
-        if (!isWebView) {
-          try {
-            // 检测浏览器跳转支持
-            const canUseWindowOpen = typeof window.open === 'function';
-            const canUseIframe = 'createElement' in document;
-            
-            // 浏览器方式1: 使用window.open
-            if (canUseWindowOpen) {
-              const directResult = window.open('content://com.android.externalstorage.documents/root/primary', '_blank');
-              
-              // 检查是否成功打开
-              if (directResult) {
-                setTimeout(() => {
+        // 显示跳转确认弹窗
+        toast.custom((t) => (
+          <div className="bg-white dark:bg-gray-800 rounded-[8px] p-4 shadow-lg max-w-sm">
+            <h3 className="font-medium text-sm mb-2">确认打开文件管理</h3>
+            <div className="mb-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">跳转方式:</p>
+              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">
+                <p className="text-xs break-all">
+                  {isWebView ? 'WebView Bridge' : 'Intent URL'}
+                </p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">跳转链接:</p>
+              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">
+                <p className="text-xs break-all">
+                  {isWebView 
+                    ? 'window.AndroidBridge.openFileManager()' 
+                    : 'intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;package=com.android.filemanager;end'}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  toast.dismiss(t);
                   setFileManagerLoading(false);
-                }, 1500);
-                return;
-              }
-            }
+                }}
+                className="px-3 py-1 text-xs rounded-[4px] bg-gray-100 dark:bg-gray-700"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  toast.dismiss(t);
+                  // 方案1: 优先尝试使用URL Scheme (content://)
+                  try {
+                    const contentUri = 'content://com.android.externalstorage.documents/root/primary';
+                    window.location.href = contentUri;
+                    setTimeout(() => {
+                      if (!document.hidden) {
+                        toast('如果未跳转，将尝试其他方案');
+                      }
+                      setFileManagerLoading(false);
+                    }, 1500);
+                    return;
+                  } catch (e) {
+                    console.log('使用content://跳转失败，尝试其他方案:', e);
+                  }
 
-            // 浏览器方式2: 使用iframe跳转
-            if (canUseIframe) {
-              const iframe = document.createElement('iframe');
-              iframe.style.display = 'none';
-              iframe.src = 'content://com.android.externalstorage.documents/root/primary';
-              document.body.appendChild(iframe);
-              
-              // 浏览器方式3: 尝试Intent方式
-              const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
-              const intentIframe = document.createElement('iframe');
-              intentIframe.style.display = 'none';
-              intentIframe.src = intentUri;
-              document.body.appendChild(intentIframe);
-            }
+                  // 方案2: 尝试使用Intent URL (与系统设置相同的方式)
+                  try {
+                    const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;package=com.android.filemanager;S.browser_fallback_url=https://filemanager.com;end`;
+                    window.location.href = intentUri;
+                    setTimeout(() => {
+                      if (!document.hidden) {
+                        toast('如果未跳转，将尝试其他方案');
+                      }
+                      setFileManagerLoading(false);
+                    }, 1500);
+                    return;
+                  } catch (e) {
+                    console.log('使用Intent URL跳转失败，尝试其他方案:', e);
+                  }
 
-            setTimeout(() => {
-              if (!document.hidden) {
-                toast('如果未跳转，请尝试手动打开文件管理器');
-              }
-              setFileManagerLoading(false);
-            }, 1500);
-            return;
-          } catch (e) {
-            console.log('浏览器跳转方案失败:', e);
-          }
-        }
+                  // 方案3: 尝试WebView Bridge方式 (与系统设置相同)
+                  if (isWebView) {
+                    try {
+                      if (window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
+                        window.AndroidBridge.openFileManager();
+                        setTimeout(() => {
+                          if (!document.hidden) {
+                            toast('如果未跳转，请尝试其他方案');
+                          }
+                          setFileManagerLoading(false);
+                        }, 1500);
+                        return;
+                      }
+                    } catch (e) {
+                      console.log('WebView Bridge方式跳转失败:', e);
+                    }
+                  }
 
-        // 方案4: 尝试通用文件URI (备用方案)
-        try {
-          window.open('content://com.android.externalstorage.documents/root/primary');
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast('如果未跳转，请手动打开文件管理器');
-            }
-            setFileManagerLoading(false);
-          }, 1500);
-          return;
-        } catch (e) {
-          console.log('通用文件URI跳转失败:', e);
-        }
+                  // 方案4: 浏览器环境下的跳转方案 (与系统设置相同)
+                  if (!isWebView) {
+                    try {
+                      // 检测浏览器跳转支持
+                      const canUseWindowOpen = typeof window.open === 'function';
+                      const canUseIframe = 'createElement' in document;
+                      
+                      // 浏览器方式1: 使用window.open
+                      if (canUseWindowOpen) {
+                        const directResult = window.open('content://com.android.externalstorage.documents/root/primary', '_blank');
+                        
+                        // 检查是否成功打开
+                        if (directResult) {
+                          setTimeout(() => {
+                            setFileManagerLoading(false);
+                          }, 1500);
+                          return;
+                        }
+                      }
 
-        // 所有方案都失败
-        toast.error('无法打开文件管理，请手动打开文件管理器');
-        setFileManagerLoading(false);
+                      // 浏览器方式2: 使用iframe跳转
+                      if (canUseIframe) {
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = 'content://com.android.externalstorage.documents/root/primary';
+                        document.body.appendChild(iframe);
+                        
+                        // 浏览器方式3: 尝试Intent方式
+                        const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
+                        const intentIframe = document.createElement('iframe');
+                        intentIframe.style.display = 'none';
+                        intentIframe.src = intentUri;
+                        document.body.appendChild(intentIframe);
+                      }
+
+                      setTimeout(() => {
+                        if (!document.hidden) {
+                          toast('如果未跳转，请尝试手动打开文件管理器');
+                        }
+                        setFileManagerLoading(false);
+                      }, 1500);
+                      return;
+                    } catch (e) {
+                      console.log('浏览器跳转方案失败:', e);
+                    }
+                  }
+
+                  // 方案5: 尝试通用文件URI (备用方案)
+                  try {
+                    window.open('content://com.android.externalstorage.documents/root/primary');
+                    setTimeout(() => {
+                      if (!document.hidden) {
+                        toast('如果未跳转，请手动打开文件管理器');
+                      }
+                      setFileManagerLoading(false);
+                    }, 1500);
+                    return;
+                  } catch (e) {
+                    console.log('通用文件URI跳转失败:', e);
+                  }
+
+                  // 所有方案都失败
+                  toast.error('无法打开文件管理，请手动打开文件管理器');
+                  setFileManagerLoading(false);
+                }}
+                className="px-3 py-1 text-xs rounded-[4px] bg-[var(--color-primary)] text-white"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        ), { duration: 10000 });
       } else {
         toast.error('此功能仅在安卓设备上可用');
         setFileManagerLoading(false);
@@ -310,27 +375,70 @@ export default function DeveloperCenter() {
     setIsLoading(true);
     try {
       if (isAndroid) {
-        if (isWebView && tryWebViewApproach()) {
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast.error('请在WebView配置中添加intent跳转支持');
-            }
-            setIsLoading(false);
-          }, 1500);
-          return;
-        }
+        // 显示跳转确认弹窗
+        toast.custom((t) => (
+          <div className="bg-white dark:bg-gray-800 rounded-[8px] p-4 shadow-lg max-w-sm">
+            <h3 className="font-medium text-sm mb-2">确认打开系统设置</h3>
+            <div className="mb-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">跳转方式:</p>
+              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">
+                <p className="text-xs break-all">
+                  {isWebView ? 'WebView Bridge' : 'Intent URL'}
+                </p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">跳转链接:</p>
+              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">
+                <p className="text-xs break-all">
+                  {isWebView 
+                    ? 'window.AndroidBridge.openSettings()' 
+                    : 'intent:#Intent;action=android.settings.SETTINGS;end'}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  toast.dismiss(t);
+                  setIsLoading(false);
+                }}
+                className="px-3 py-1 text-xs rounded-[4px] bg-gray-100 dark:bg-gray-700"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  toast.dismiss(t);
+                  if (isWebView && tryWebViewApproach()) {
+                    setTimeout(() => {
+                      if (!document.hidden) {
+                        toast.error('请在WebView配置中添加intent跳转支持');
+                      }
+                      setIsLoading(false);
+                    }, 1500);
+                    return;
+                  }
 
-        if (tryBrowserApproach()) {
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast.error('无法打开系统设置，请确保应用有相应权限');
-            }
-            setIsLoading(false);
-          }, 1500);
-          return;
-        }
+                  if (tryBrowserApproach()) {
+                    setTimeout(() => {
+                      if (!document.hidden) {
+                        toast.error('无法打开系统设置，请确保应用有相应权限');
+                      }
+                      setIsLoading(false);
+                    }, 1500);
+                    return;
+                  }
 
-        throw new Error('所有跳转方案尝试失败');
+                  throw new Error('所有跳转方案尝试失败');
+                }}
+                className="px-3 py-1 text-xs rounded-[4px] bg-[var(--color-primary)] text-white"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        ), { duration: 10000 });
       } else {
         toast.error('此功能仅在安卓设备上可用');
         setIsLoading(false);
@@ -398,6 +506,26 @@ IP地址: ${window.location.hostname || '未知'}`;
             <h2 className="text-2xl font-bold">加载中...</h2>
             <p className="text-gray-600 dark:text-gray-300">
               正在检查认证状态
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!initialized) {
+    return (
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md bg-white dark:bg-gray-800 rounded-[12px] p-8 shadow-lg text-center"
+          >
+            <i className="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"></i>
+            <h2 className="text-2xl font-bold">加载中...</h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              正在检查认证状态和路径
             </p>
           </motion.div>
         </div>
