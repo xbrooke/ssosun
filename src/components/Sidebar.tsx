@@ -31,7 +31,22 @@ export default function Sidebar() {
     { to: '/wallpaper', icon: 'fas fa-image', text: '车机壁纸' },
     { to: '/settings', icon: 'fas fa-gear', text: '安卓设置' },
     { to: '/donate', icon: 'fas fa-heart', text: '赞赏支持' }
-  ];
+  ].map((item, index) => ({
+    ...item,
+    animation: {
+      initial: { x: -20, opacity: 0 },
+      animate: { 
+        x: 0, 
+        opacity: 1,
+        transition: {
+          delay: 0.1 * index,
+          type: 'spring',
+          stiffness: 500,
+          damping: 25
+        }
+      }
+    }
+  }));
 
   return (
     <>
@@ -74,13 +89,13 @@ export default function Sidebar() {
               {/* 移动端关闭按钮 */}
               {isMobile && (
                 <motion.button
-                  onClick={() => setIsOpen(false)}
-                  className="mb-4 self-end rounded-[4px] p-2 hover:bg-[var(--color-primary-light)]/10"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <i className="fa-solid fa-xmark text-lg"></i>
-                </motion.button>
+                   onClick={() => setIsOpen(false)}
+                   className="mb-4 self-end rounded-[4px] p-2 hover:bg-[var(--color-primary)]/10"
+                   whileHover={{ scale: 1.1 }}
+                   whileTap={{ scale: 0.95 }}
+                 >
+                   <i className="fa-solid fa-xmark text-lg"></i>
+                 </motion.button>
               )}
 
               {/* 侧边栏内容 */}
@@ -101,61 +116,65 @@ export default function Sidebar() {
                 </motion.h2>
                  <ul className="space-y-1">
 
-                    {menuItems.map((item, index) => (
-                      <motion.li
-                        key={item.to}
-                        initial={{ x: -20 }}
-                        animate={{ x: 0 }}
-                        transition={{ delay: index * 0.1 + 0.2 }}
-                        onClick={() => isMobile && setIsOpen(false)}
-                      >
-                        {item.external ? (
-                          <a
-                            href={item.to}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`
-                              flex items-center rounded-[4px] p-2 text-sm
-                              md:p-3 md:text-base
-                              text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)]/10
-                              transition-all duration-200
-                            `}
-                          >
-                            <div className={`
-                              mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[4px]
-                              md:h-7 md:w-7
-                              bg-[var(--color-primary)]/10
-                            `}>
-                              <i className={`fa-solid ${item.icon} text-sm text-[var(--color-primary)]`}></i>
-                            </div>
-                            <span>{item.text}</span>
-                          </a>
-                        ) : (
-                          <Link 
-                            to={item.to}
-                            className={`
-                              flex items-center rounded-[4px] p-2 text-sm
-                              md:p-3 md:text-base
-                              ${location.pathname === item.to 
-                                ? 'bg-[var(--color-primary)] text-white'
-                                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)]/10'}
-                              transition-all duration-200
-                            `}
-                          >
-                            <div className={`
-                              mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[4px]
-                              md:h-7 md:w-7
-                              ${location.pathname === item.to
-                                ? 'bg-white/20'
-                                : 'bg-[var(--color-primary)]/10'}
-                            `}>
-                              <i className={`fa-solid ${item.icon} text-sm ${location.pathname === item.to ? 'text-white' : 'text-[var(--color-primary)]'}`}></i>
-                            </div>
-                            <span>{item.text}</span>
-                          </Link>
-                        )}
-                      </motion.li>
-                    ))}
+                     {menuItems.map((item) => (
+                       <motion.li
+                         key={item.to}
+                         {...item.animation}
+                         onClick={() => isMobile && setIsOpen(false)}
+                       >
+                         {item.external ? (
+                           <a
+                             href={item.to}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className={`
+                               flex items-center rounded-[12px] p-3 text-sm
+                               md:p-3 md:text-base
+                               text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-lightest)]
+                               transition-all duration-[var(--transition-duration)] ease-[var(--transition-easing)]
+                             `}
+                           >
+                             <motion.div 
+                               className={`
+                                 mr-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[12px]
+                                 md:h-8 md:w-8
+                                 bg-[var(--color-primary-lightest)]
+                               `}
+                               whileHover={{ scale: 1.1 }}
+                             >
+                               <i className={`fa-solid ${item.icon} text-lg text-[var(--color-primary)]`}></i>
+                             </motion.div>
+                             <span className="font-medium">{item.text}</span>
+                           </a>
+                         ) : (
+                           <Link 
+                             to={item.to}
+                             className={`
+                                flex items-center rounded-[4px] p-2.5 text-sm
+                                md:p-2.5 md:text-base
+                                ${location.pathname === item.to 
+                                  ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-primary)]/10'}
+                                transition-all duration-[var(--transition-duration)] ease-[var(--transition-easing)]
+                              `}
+                           >
+                             <motion.div
+                               className={`
+                                 mr-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[12px]
+                                 md:h-8 md:w-8
+                                 ${location.pathname === item.to
+                                   ? 'bg-white/20'
+                                   : 'bg-[var(--color-primary-lightest)]'}
+                               `}
+                               whileHover={{ scale: 1.1 }}
+                             >
+                               <i className={`fa-solid ${item.icon} text-lg ${location.pathname === item.to ? 'text-white' : 'text-[var(--color-primary)]'}`}></i>
+                             </motion.div>
+                             <span className="font-medium">{item.text}</span>
+                           </Link>
+                         )}
+                       </motion.li>
+                     ))}
 
                 </ul>
               </motion.div>

@@ -58,6 +58,11 @@ export default function Wallpapers() {
     }
   };
 
+  // 直接下载图片链接
+  const downloadDirectly = (url: string) => {
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 overflow-x-hidden">
       <Sidebar />
@@ -79,18 +84,20 @@ export default function Wallpapers() {
             
             <div className="relative w-[200px] fixed top-4 right-4 z-20 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-[4px] border border-gray-200 dark:border-gray-700">
               <div className="relative flex items-center">
-                <i className={`fa-solid ${searchQuery ? 'fa-spinner animate-spin' : 'fa-magnifying-glass'} absolute left-3 z-10 text-gray-400 dark:text-gray-300`}></i>
+                <i className="fa-solid fa-magnifying-glass absolute left-3 z-10 text-gray-400 dark:text-gray-300"></i>
                 <input
                   type="text"
                   placeholder="搜索壁纸..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full rounded-[4px] px-3 py-1.5 pl-9 pr-7 text-sm bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                  style={{ transition: 'none' }}
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
+                    className="absolute right-2 p-1 rounded-full"
+                    style={{ transition: 'none' }}
                   >
                     <i className="fa-solid fa-xmark text-xs text-gray-500 dark:text-gray-400"></i>
                   </button>
@@ -153,7 +160,14 @@ export default function Wallpapers() {
                             loading="lazy"
                            onLoad={(e) => e.currentTarget.classList.add('opacity-100')}
                            onError={(e) => e.currentTarget.src = '/placeholder-wallpaper.png'}
-                           onClick={() => handleDownload(wallpaper.downloadUrl || wallpaper.image, wallpaper.title, wallpaper.resolution, wallpaper.id)}
+                            onClick={() => {
+                              // 提供两种下载方式选项
+                              if (confirm('直接使用链接下载(适合电脑)？取消则使用自动下载(适合手机)')) {
+                                downloadDirectly(wallpaper.downloadUrl || wallpaper.image);
+                              } else {
+                                handleDownload(wallpaper.downloadUrl || wallpaper.image, wallpaper.title, wallpaper.resolution, wallpaper.id);
+                              }
+                            }}
                          />
                     </div>
                     <div className="p-3">
