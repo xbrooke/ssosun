@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import Settings from "@/pages/Settings";
+import DeveloperCenter from "@/pages/DeveloperCenter";
 import Category from "@/pages/Category";
 import AppDetail from "@/pages/AppDetail";
 import Featured from "@/pages/Featured";
@@ -39,7 +39,7 @@ export default function App() {
           <Route path="/tutorial/:id" element={<Featured />} />
           <Route path="/wallpaper" element={<Wallpapers />} />
           <Route path="/wallpaper/:id" element={<Wallpapers />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/developer" element={<DeveloperCenter />} />
           <Route path="/donate" element={<Donate />} />
         </Routes>
       </AuthContext.Provider>
