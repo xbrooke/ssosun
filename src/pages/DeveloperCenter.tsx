@@ -4,6 +4,48 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useTheme, useDeviceDetect } from '@/hooks/useTheme';
 
+// 获取更详细的调试信息
+const getDetailedDebugInfo = (isAndroid: boolean, isWebView: boolean, theme: string, networkStatus: any) => {
+  const now = new Date();
+  return `=== 详细调试信息 ===
+时间: ${now.toLocaleString()}
+时间戳: ${now.getTime()}
+时区: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+设备类型: ${isAndroid ? 'Android' : '非Android'}
+WebView环境: ${isWebView ? '是' : '否'}
+当前主题: ${theme}
+
+=== 设备信息 ===
+用户代理: ${navigator.userAgent}
+屏幕分辨率: ${window.screen.width}x${window.screen.height} (${window.devicePixelRatio}x)
+设备内存: ${navigator.deviceMemory || '未知'} GB
+CPU核心数: ${navigator.hardwareConcurrency || '未知'}
+操作系统: ${navigator.platform}
+用户语言: ${navigator.language}
+Cookie启用: ${navigator.cookieEnabled}
+地理位置: ${'geolocation' in navigator ? '支持' : '不支持'}
+触摸支持: ${'maxTouchPoints' in navigator ? navigator.maxTouchPoints : '未知'}
+电池API: ${'getBattery' in navigator ? '支持' : '不支持'}
+
+=== 网络状态 ===
+在线状态: ${networkStatus.online ? '在线' : '离线'}
+连接类型: ${networkStatus.type}
+下载速度: ${networkStatus.downlink} Mbps
+延迟时间: ${networkStatus.rtt} ms
+节省数据模式: ${networkStatus.saveData ? '开启' : '关闭'}
+网络变化事件: ${'onLine' in navigator ? '支持' : '不支持'}
+
+=== 应用信息 ===
+应用版本: v2.4.0
+构建时间: 2025-06-10
+IP地址: ${window.location.hostname || '未知'}
+协议: ${window.location.protocol}
+路径: ${window.location.pathname}
+哈希: ${window.location.hash}
+搜索参数: ${window.location.search}
+`;
+};
+
 // 网络状态hook
 const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState({
@@ -465,7 +507,7 @@ IP地址: ${window.location.hostname || '未知'}`;
 
 
 
-            {/* 系统设置区块 */}
+            {/* 安卓系统设置卡片 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -474,21 +516,65 @@ IP地址: ${window.location.hostname || '未知'}`;
             >
               <h2 className="text-xl font-semibold mb-4 flex items-center">
                 <i className="fas fa-cog mr-2 text-purple-500"></i>
-                系统设置
+                安卓系统设置
               </h2>
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-[8px]">
-                  <h3 className="font-medium mb-2">安卓系统设置</h3>
+                  <h3 className="font-medium mb-2">系统设置跳转方案</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                    点击下方按钮可直接跳转到安卓系统设置界面
+                    支持多种跳转方式，根据设备环境自动选择最佳方案
                   </p>
+                  
+                  {/* 检测结果展示 */}
+                  <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-[4px]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">WebView环境支持:</span>
+                      {isWebView ? (
+                        <span className="flex items-center text-green-500">
+                          <i className="fa-solid fa-check-circle mr-1"></i> 支持
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-red-500">
+                          <i className="fa-solid fa-times-circle mr-1"></i> 不支持
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">浏览器跳转支持:</span>
+                      {isAndroid && !isWebView ? (
+                        <span className="flex items-center text-green-500">
+                          <i className="fa-solid fa-check-circle mr-1"></i> 支持
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-red-500">
+                          <i className="fa-solid fa-times-circle mr-1"></i> 不支持
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 mb-4 space-y-2">
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>WebView环境：使用AndroidBridge或Intent跳转</span>
+                    </li>
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>浏览器环境：尝试iframe或android.startActivity</span>
+                    </li>
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>备用方案：提示用户手动打开设置</span>
+                    </li>
+                  </ul>
                   <motion.button
                     onClick={openAndroidSettings}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    disabled={isLoading}
+                    disabled={isLoading || !isAndroid}
                     className={`w-full px-4 py-2 rounded-[4px] font-medium ${
-                      isLoading ? 'bg-gray-300 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
+                      isLoading ? 'bg-gray-300 dark:bg-gray-600' : 
+                      !isAndroid ? 'bg-gray-400 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
                     } text-white shadow-sm transition-colors`}
                   >
                     {isLoading ? (
@@ -504,20 +590,65 @@ IP地址: ${window.location.hostname || '未知'}`;
                     )}
                   </motion.button>
                 </div>
+              </div>
+            </motion.div>
 
-                {/* 文件管理 */}
+            {/* 文件管理卡片 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
+            >
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <i className="fas fa-folder-open mr-2 text-blue-500"></i>
+                文件管理
+              </h2>
+              <div className="space-y-4">
                 <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-[8px]">
-                  <h3 className="font-medium mb-2">文件管理</h3>
+                  <h3 className="font-medium mb-2">文件管理跳转方案</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                    点击下方按钮可直接跳转到系统文件管理器
+                    专为WebView环境优化，需要应用有相应权限
                   </p>
-                   <motion.button
+                  
+                  {/* 检测结果展示 */}
+                  <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-[4px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">WebView环境支持:</span>
+                      {isWebView ? (
+                        <span className="flex items-center text-green-500">
+                          <i className="fa-solid fa-check-circle mr-1"></i> 支持
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-red-500">
+                          <i className="fa-solid fa-times-circle mr-1"></i> 不支持
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 mb-4 space-y-2">
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>WebView环境：使用AndroidBridge.openFileManager</span>
+                    </li>
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>Intent方案：android.intent.action.VIEW</span>
+                    </li>
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>备用方案：提示用户手动打开文件管理器</span>
+                    </li>
+                  </ul>
+                  <motion.button
                     onClick={openFileManager}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    disabled={fileManagerLoading}
+                    disabled={fileManagerLoading || !isAndroid || !isWebView}
                     className={`w-full px-4 py-2 rounded-[4px] font-medium ${
-                      fileManagerLoading ? 'bg-gray-300 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
+                      fileManagerLoading ? 'bg-gray-300 dark:bg-gray-600' : 
+                      !isAndroid || !isWebView ? 'bg-gray-400 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
                     } text-white shadow-sm transition-colors`}
                   >
                     {fileManagerLoading ? (
@@ -528,7 +659,7 @@ IP地址: ${window.location.hostname || '未知'}`;
                     ) : (
                       <>
                         <i className="fa-solid fa-folder-open mr-2"></i>
-                        {isAndroid ? '打开文件管理' : '非安卓设备'}
+                        {!isAndroid ? '非安卓设备' : !isWebView ? '非WebView环境' : '打开文件管理'}
                       </>
                     )}
                   </motion.button>
@@ -543,3 +674,4 @@ IP地址: ${window.location.hostname || '未知'}`;
     </div>
   );
 }
+
