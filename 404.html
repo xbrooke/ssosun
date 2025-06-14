@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>页面未找到</title>
+  <script>
+    // 更智能的重定向逻辑
+    const path = window.location.pathname;
+    if (path.startsWith('/app/') || 
+        path.startsWith('/featured/') || 
+        path.startsWith('/wallpaper/') || 
+        path.startsWith('/developer/') ||
+        path.startsWith('/settings/')) {
+      // 保留路径并重定向到index.html
+      window.location.href = `/?redirect=${encodeURIComponent(path)}`;
+    } else {
+      // 其他情况重定向到首页
+      window.location.href = '/';
+    }
+  </script>
+</head>
+<body>
+  <div style="text-align: center; padding: 50px;">
+    <h1>404 - 页面未找到</h1>
+    <p>正在自动跳转到合适页面...</p>
+    <p>如果未自动跳转，请<a href="/">点击这里返回首页</a></p>
+  </div>
+</body>
+</html>
