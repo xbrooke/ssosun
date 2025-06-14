@@ -112,7 +112,7 @@ export default function Sidebar() {
                   transition={{ delay: 0.1 }}
                 >
                   <i className="fa-brands fa-github-alt mr-3 text-[var(--color-primary)]"></i>
-                   应用分类
+                   徐大兵的工具箱
                 </motion.h2>
                  <ul className="space-y-1">
 
