@@ -7,48 +7,7 @@ import { useState, useCallback } from 'react';
 import { wallpapers, wallpaperCategories } from '@/data/wallpapers';
 
 
-const SearchBox = React.memo(({ searchQuery, setSearchQuery }: {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-}) => {
-  const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value),
-    [setSearchQuery]
-  );
 
-  const clearSearch = useCallback(() => setSearchQuery(''), [setSearchQuery]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className="fixed right-4 top-4 z-50 w-[220px] md:w-[260px] bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-[4px] border border-gray-200 dark:border-gray-700 shadow-lg"
-    >
-      <div className="relative flex items-center">
-        <i className="fa-solid fa-magnifying-glass absolute left-3 z-10 text-gray-400 dark:text-gray-300"></i>
-        <input
-          type="text"
-          placeholder="搜索壁纸..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          className="w-full rounded-[4px] px-3 py-2 pl-9 pr-7 text-sm bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
-        />
-        {searchQuery && (
-          <motion.button
-            onClick={clearSearch}
-            className="absolute right-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <i className="fa-solid fa-xmark text-xs text-gray-500 dark:text-gray-400"></i>
-          </motion.button>
-        )}
-      </div>
-    </motion.div>
-  );
-});
 
 export default function Wallpapers() {
   const { isDark } = useTheme();
@@ -114,8 +73,7 @@ export default function Wallpapers() {
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 overflow-x-hidden">
       <Sidebar />
       <main className="ml-0 flex-1 p-4 transition-all duration-300 md:ml-64 lg:ml-72 md:p-8 text-gray-800 bg-gray-50 dark:text-gray-100 dark:bg-gray-900 w-full max-w-full overflow-x-hidden relative">
-        {/* 搜索框组件 */}
-        <SearchBox searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
         
         <div className="max-w-[1800px] mx-auto">
         <motion.div 

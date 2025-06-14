@@ -145,9 +145,11 @@ export interface Tutorial {
   date: string;
   readTime: string;
   content: string;
+  externalUrl?: string; // 新增外部链接字段
   tags: string[];
   isFeatured: boolean;
 }
+
 
 export const tutorials: Tutorial[] = [
   {
@@ -159,7 +161,7 @@ export const tutorials: Tutorial[] = [
     author: '张技术',
     date: '2025-05-15',
     readTime: '15分钟',
-    content: '详细讲解车载导航的各项功能和使用场景...',
+    externalUrl: 'https://example.com/navigation-guide',
     tags: ['导航', '新手教程', '系统设置'],
     isFeatured: true
   },
@@ -172,7 +174,7 @@ export const tutorials: Tutorial[] = [
     author: '李音效',
     date: '2025-05-20',
     readTime: '12分钟',
-    content: '如何优化音效设置和播放列表管理...',
+    externalUrl: 'https://example.com/entertainment-optimize',
     tags: ['音乐', '视频', '音效'],
     isFeatured: true
   },
@@ -185,8 +187,21 @@ export const tutorials: Tutorial[] = [
     author: '王工程师',
     date: '2025-06-01',
     readTime: '18分钟',
-    content: '驾驶模式、座椅记忆、氛围灯等个性化设置...',
+    externalUrl: 'https://example.com/vehicle-settings',
     tags: ['个性化', '驾驶模式', '系统设置'],
     isFeatured: false
+  },
+  {
+    id: 'wechat-article',
+    title: '车机系统最新功能介绍',
+    description: '了解车机系统的最新功能和使用技巧',
+    cover: 'https://space.coze.cn/api/coze_space/gen_image?image_size=landscape_16_9&prompt=car%20infotainment%20system%20with%20new%20features%2C%20modern%20design&sign=ccffa155996b2bdbbedcfa63b098e13c',
+    category: '系统更新',
+    author: '微信官方',
+    date: '2025-06-14',
+    readTime: '10分钟',
+    externalUrl: 'https://hblog.xbrooke.cn/p/22189.html',
+    tags: ['新功能', '系统更新', '官方指南'],
+    isFeatured: true
   }
 ];

@@ -124,12 +124,44 @@ body {
   transition: background-color var(--transition-duration) var(--transition-easing);
 }
 
-/* 加载动画 */
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* 像素风格跳动动画 */
+@keyframes pixel-jump {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    transform: translateY(-15px) scale(1);
+  }
+  50% {
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    transform: translateY(-8px) scale(1);
+  }
 }
-.fa-spinner {
-  animation: spin 1s linear infinite;
+
+.github-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  overflow: hidden;
+}
+
+.github-loading-cat {
+  width: 80px;
+  height: 80px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect fill="%230066FF" x="8" y="16" width="4" height="4"/><rect fill="%230066FF" x="12" y="16" width="4" height="4"/><rect fill="%230066FF" x="16" y="16" width="4" height="4"/><rect fill="%230066FF" x="20" y="16" width="4" height="4"/><rect fill="%230066FF" x="12" y="12" width="4" height="4"/><rect fill="%230066FF" x="16" y="12" width="4" height="4"/><rect fill="%230066FF" x="12" y="20" width="4" height="4"/><rect fill="%230066FF" x="16" y="20" width="4" height="4"/><rect fill="%230066FF" x="8" y="8" width="4" height="4"/><rect fill="%230066FF" x="20" y="8" width="4" height="4"/></svg>');
+  background-repeat: no-repeat;
+  background-position: center;
+  animation: pixel-jump 1s ease-in-out infinite;
+  image-rendering: pixelated;
+}
+
+.dark .github-loading-cat {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect fill="%233A8CFF" x="8" y="16" width="4" height="4"/><rect fill="%233A8CFF" x="12" y="16" width="4" height="4"/><rect fill="%233A8CFF" x="16" y="16" width="4" height="4"/><rect fill="%233A8CFF" x="20" y="16" width="4" height="4"/><rect fill="%233A8CFF" x="12" y="12" width="4" height="4"/><rect fill="%233A8CFF" x="16" y="12" width="4" height="4"/><rect fill="%233A8CFF" x="12" y="20" width="4" height="4"/><rect fill="%233A8CFF" x="16" y="20" width="4" height="4"/><rect fill="%233A8CFF" x="8" y="8" width="4" height="4"/><rect fill="%233A8CFF" x="20" y="8" width="4" height="4"/></svg>');
+  animation: pixel-jump 1s ease-in-out infinite;
+  image-rendering: pixelated;
 }
 
 /* 按钮基础样式 */

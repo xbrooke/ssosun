@@ -3,9 +3,12 @@ import Sidebar from '@/components/Sidebar';
 import { tutorials } from '@/data/apps';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
-function ArticleModal({ tutorial, onClose }: { tutorial: typeof tutorials[0], onClose: () => void }) {
+const ArticleModal = ({ tutorial, onClose }: { tutorial: typeof tutorials[0], onClose: () => void }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -22,69 +25,49 @@ function ArticleModal({ tutorial, onClose }: { tutorial: typeof tutorials[0], on
           className="relative max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[12px] shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
+          {/* 新增的退出按钮 */}
+          <motion.button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-[var(--color-primary)] text-white shadow-lg flex items-center justify-center"
+            aria-label="关闭"
           >
             <i className="fa-solid fa-xmark"></i>
-          </button>
+          </motion.button>
 
           <div className="p-6">
-            <div className="relative h-64 w-full overflow-hidden rounded-t-[12px]">
-              <img
-                src={tutorial.cover}
-                alt={tutorial.title}
-                className="h-full w-full object-cover"
-              />
-            </div>
-
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {tutorial.category} • {tutorial.readTime}
-                </span>
-                {tutorial.isFeatured && (
-                  <span className="px-2 py-1 bg-yellow-500 text-white rounded-sm text-xs">
-                    精选教程
-                  </span>
-                )}
-              </div>
-
-              <h2 className="text-2xl font-bold mb-4">{tutorial.title}</h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                {tutorial.description}
-              </p>
-
-              <div className="prose dark:prose-invert max-w-none">
-                {tutorial.content}
-              </div>
-
-              <div className="mt-8">
-                <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      <i className="fa-solid fa-user text-gray-500"></i>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="font-medium">{tutorial.author}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      发布于 {tutorial.date}
-                    </p>
-                  </div>
+            <div className="relative h-[80vh] w-full rounded-[12px] overflow-hidden border border-gray-200 dark:border-gray-700">
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                  <i className="fa-solid fa-spinner animate-spin text-2xl text-[var(--color-primary)]"></i>
                 </div>
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-2">
-                {tutorial.tags.map(tag => (
-                  <span 
-                    key={tag}
-                    className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-sm"
+              )}
+              {error ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 p-4">
+                  <i className="fa-solid fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                  <p className="text-center text-gray-600 dark:text-gray-300">
+                    无法加载内容，请检查链接是否有效
+                  </p>
+                  <button 
+                    onClick={() => window.open(tutorial.externalUrl, '_blank')}
+                    className="mt-4 px-4 py-2 bg-[var(--color-primary)] text-white rounded-[4px]"
                   >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
+                    在新窗口打开
+                  </button>
+                </div>
+              ) : (
+                <iframe
+                  src={tutorial.externalUrl}
+                  className="w-full h-full border-0"
+                  onLoad={() => setLoading(false)}
+                  onError={() => {
+                    setLoading(false);
+                    setError(true);
+                  }}
+                  allowFullScreen
+                />
+              )}
             </div>
           </div>
         </motion.div>

@@ -46,6 +46,8 @@ IP地址: ${window.location.hostname || '未知'}
 `;
 };
 
+
+
 // 网络状态hook
 const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState({
@@ -100,41 +102,50 @@ export default function DeveloperCenter() {
   const { isDark, theme } = useTheme();
   const { isMobile } = useDeviceDetect();
   const navigate = useNavigate();
+  // 口令管理状态
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // 口令状态管理
+  const [passwords, setPasswords] = useState({
+    permanentPasswords: ['123321', '010203'] // 支持多个密码
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwords.permanentPasswords.includes(password)) {
+      setIsAuthenticated(true);
+      localStorage.setItem('devAuth', 'true');
+      toast.success('密码验证成功');
+    } else {
+      toast.error('密码错误，请重试');
+    }
+  };
+
+  useEffect(() => {
+    // 设置多个密码
+    setPasswords({
+      permanentPasswords: ['123321', '010203']
+    });
+
+    // 设备检测
+    const ua = navigator.userAgent.toLowerCase();
+    setIsAndroid(/android/.test(ua));
+    setIsWebView(/webview|micromessenger|weibo|qq/.test(ua));
+  }, []);
+
+  
+
   const [isLoading, setIsLoading] = useState(false);
   const [fileManagerLoading, setFileManagerLoading] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isWebView, setIsWebView] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const [initialized, setInitialized] = useState(true); // 默认设为true避免无限加载
   const networkStatus = useNetworkStatus();
 
 
-  // 初始化认证状态
-  useEffect(() => {
-    console.log('初始化认证状态检查...');
-    const authStatus = localStorage.getItem('devAuth') === 'true';
-    setIsAuthenticated(authStatus);
-    setInitialized(true);
-    console.log(`认证状态初始化完成: ${authStatus}`);
-  }, []);
 
-  useEffect(() => {
-    const userAgent = navigator.userAgent.toLowerCase();
-    setIsAndroid(/android/.test(userAgent));
-    setIsWebView(/(webview|wv)/.test(userAgent));
-  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === '123321') {
-      localStorage.setItem('devAuth', 'true');
-      setIsAuthenticated(true);
-      toast.success('验证成功，欢迎开发者！');
-    } else {
-      toast.error('口令错误，请关注公众号获取正确口令');
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('devAuth');
@@ -379,7 +390,14 @@ IP地址: ${window.location.hostname || '未知'}`;
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-md bg-white dark:bg-gray-800 rounded-[12px] p-8 shadow-lg text-center"
           >
-            <i className="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"></i>
+            <img 
+              src="https://h.xbrooke.cn/img/yg/mona-loading-default.gif" 
+              alt="加载中"
+              className="w-32 h-32 mx-auto mb-4 object-contain"
+              onError={(e) => {
+                e.currentTarget.src = 'https://space.coze.cn/api/coze_space/gen_image?image_size=square&prompt=Loading%20animation%2C%20simple%20design&sign=71ca7f3b20de1ffe09dfb6ca05d09f6c';
+              }}
+            />
             <h2 className="text-2xl font-bold">加载中...</h2>
             <p className="text-gray-600 dark:text-gray-300">
               正在检查认证状态
@@ -409,38 +427,48 @@ IP地址: ${window.location.hostname || '未知'}`;
                 请扫码关注公众号获取访问口令
               </p>
               
-              {/* 公众号二维码 */}
-              <motion.div
-                initial={{ scale: 0.95 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="mb-6"
-              >
-                <img
-                  src={qrCodeUrl}
-                  alt="公众号二维码"
-                  className="w-48 h-48 mx-auto rounded-[4px] border border-gray-200 dark:border-gray-700 p-2 bg-white"
-                />
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  扫码关注公众号后回复"开发者"获取口令
-                </p>
-              </motion.div>
+                {/* 公众号二维码 */}
+                <motion.div
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                  className="mb-6"
+                >
+                  <div className="flex justify-center">
+                    <div className="p-4 bg-white dark:bg-gray-800 rounded-[12px] shadow-lg">
+                      <div className="flex justify-center p-2 bg-white dark:bg-gray-700 rounded-[8px] border-2 border-gray-100 dark:border-gray-600">
+                         <img
+                           src="https://h.xbrooke.cn/img/yg/qrcode.jpg"
+                           alt="公众号二维码"
+                           className="w-40 h-40 object-contain"
+                           onError={(e) => {
+                            e.currentTarget.src = 'https://space.coze.cn/api/coze_space/gen_image?image_size=square&prompt=WeChat%20Official%20Account%20QR%20code%2C%20clean%20design%2C%20white%20background%2C%20centered%2C%20Flyme%20Auto%201.8%20style&sign=c5090cf0e32a1fc08f19a2239be1f0f3';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-center text-gray-500 dark:text-gray-400 mt-4">
+                    请使用微信扫码关注公众号，回复"开发者"获取访问口令
+                  </p>
+                </motion.div>
             </div>
 
-            <form onSubmit={handleSubmit}>
+               <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  输入口令
+                  输入开发者口令
                 </label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-2 rounded-[4px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-                  placeholder="请输入访问口令"
+                  placeholder="请输入开发者口令"
                   required
                 />
               </div>
+  
 
               <motion.button
                 type="submit"

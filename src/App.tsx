@@ -77,11 +77,15 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[var(--color-bg)]">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"></i>
-          <p className="text-lg">加载中...</p>
-        </div>
+      <div className={`flex items-center justify-center min-h-screen ${theme}`}>
+        <img 
+          src="https://h.xbrooke.cn/img/yg/mona-loading-default.gif" 
+          alt="加载中"
+          className="w-16 h-16 object-contain"
+          onError={(e) => {
+            e.currentTarget.src = 'https://space.coze.cn/api/coze_space/gen_image?image_size=square&prompt=Loading%20animation%2C%20simple%20design&sign=71ca7f3b20de1ffe09dfb6ca05d09f6c';
+          }}
+        />
       </div>
     );
   }
@@ -96,7 +100,9 @@ export default function App() {
       >
         <Suspense fallback={
           <div className="flex items-center justify-center min-h-screen">
-            <i className="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)]"></i>
+            <div className="github-loading">
+              <div className="github-loading-cat"></div>
+            </div>
           </div>
         }>
           <Routes>
