@@ -5,13 +5,19 @@ import { motion } from 'framer-motion';
 import { useTheme, useDeviceDetect } from '@/hooks/useTheme';
 
 // 获取更详细的调试信息
-const getDetailedDebugInfo = (isAndroid: boolean, isWebView: boolean, theme: string, networkStatus: any) => {
-  const now = new Date();
-  return `=== 详细调试信息 ===
+  const getDetailedDebugInfo = (isAndroid: boolean, isWebView: boolean, theme: string, networkStatus: any) => {
+    const now = new Date();
+    const ua = navigator.userAgent.toLowerCase();
+    const isVivo = /vivo/i.test(ua);
+    const isOppo = /oppo/i.test(ua);
+    const isCarDevice = /car|automotive/i.test(ua);
+    
+    return `=== 详细调试信息 ===
 时间: ${now.toLocaleString()}
 时间戳: ${now.getTime()}
 时区: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
 设备类型: ${isAndroid ? 'Android' : '非Android'}
+设备厂商: ${isVivo ? 'VIVO' : isOppo ? 'OPPO' : isCarDevice ? '安卓车机' : '其他'}
 WebView环境: ${isWebView ? '是' : '否'}
 当前主题: ${theme}
 
@@ -132,6 +138,15 @@ export default function DeveloperCenter() {
     const ua = navigator.userAgent.toLowerCase();
     setIsAndroid(/android/.test(ua));
     setIsWebView(/webview|micromessenger|weibo|qq/.test(ua));
+    
+    // 检测VIVO、OPPO和车机设备
+    const isVivo = /vivo/i.test(ua);
+    const isOppo = /oppo/i.test(ua);
+    const isCarDevice = /car|automotive/i.test(ua);
+    
+    if (isVivo || isOppo || isCarDevice) {
+      console.log(`检测到特殊设备: ${isVivo ? 'VIVO' : isOppo ? 'OPPO' : '安卓车机'}`);
+    }
   }, []);
 
   
@@ -306,27 +321,111 @@ export default function DeveloperCenter() {
     setIsLoading(true);
     try {
       if (isAndroid) {
+        // 方案1: 尝试WebView Bridge方式
         if (isWebView && tryWebViewApproach()) {
           setTimeout(() => {
             if (!document.hidden) {
-              toast.error('请在WebView配置中添加intent跳转支持');
+              toast('如果未跳转，请尝试其他方案');
             }
             setIsLoading(false);
           }, 1500);
           return;
         }
 
+        // 方案2: 尝试标准Intent方式
+        try {
+          const intentUri = 'intent:#Intent;action=android.settings.SETTINGS;end';
+          window.location.href = intentUri;
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast('如果未跳转，请尝试其他方案');
+            }
+            setIsLoading(false);
+          }, 1500);
+          return;
+        } catch (e) {
+          console.log('标准Intent跳转失败:', e);
+        }
+
+        // 方案3: 尝试厂商特定方式
+        try {
+          // 小米设备
+          if (/xiaomi/i.test(navigator.userAgent)) {
+            window.location.href = 'intent:#Intent;action=miui.intent.action.SYSTEM_SETTINGS;end';
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast('正在尝试小米设备专用跳转方式');
+              }
+              setIsLoading(false);
+            }, 1500);
+            return;
+          }
+          
+           // 华为设备
+          if (/huawei|honor/i.test(navigator.userAgent)) {
+            window.location.href = 'intent:#Intent;action=com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity;end';
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast('正在尝试华为设备专用跳转方式');
+              }
+              setIsLoading(false);
+            }, 1500);
+            return;
+          }
+          
+          // VIVO设备
+          if (/vivo/i.test(navigator.userAgent)) {
+            window.location.href = 'intent:#Intent;action=com.vivo.safe.settings.MoreSettingsActivity;end';
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast('正在尝试VIVO设备专用跳转方式');
+              }
+              setIsLoading(false);
+            }, 1500);
+            return;
+          }
+          
+          // OPPO设备
+          if (/oppo/i.test(navigator.userAgent)) {
+            window.location.href = 'intent:#Intent;action=com.coloros.settings.feature.sound.controller.DefaultSoundSettingsActivity;end';
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast('正在尝试OPPO设备专用跳转方式');
+              }
+              setIsLoading(false);
+            }, 1500);
+            return;
+          }
+          
+          // 安卓车机设备
+          if (/car|automotive/i.test(navigator.userAgent)) {
+            window.location.href = 'intent:#Intent;action=android.settings.CAR_SETTINGS;end';
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast('正在尝试安卓车机专用跳转方式');
+              }
+              setIsLoading(false);
+            }, 1500);
+            return;
+          }
+        } catch (e) {
+          console.log('厂商特定跳转失败:', e);
+        }
+
+        // 方案4: 浏览器环境下的跳转方案
         if (tryBrowserApproach()) {
           setTimeout(() => {
             if (!document.hidden) {
-              toast.error('无法打开系统设置，请确保应用有相应权限');
+              toast('如果未跳转，请尝试手动打开设置');
             }
             setIsLoading(false);
           }, 1500);
           return;
         }
 
-        throw new Error('所有跳转方案尝试失败');
+        // 所有方案都失败
+        toast.error('无法打开系统设置，请手动打开设置应用');
+        setIsLoading(false);
       } else {
         toast.error('此功能仅在安卓设备上可用');
         setIsLoading(false);
@@ -615,7 +714,7 @@ IP地址: ${window.location.hostname || '未知'}`;
 
 
 
-            {/* 安卓系统设置卡片 - 简化版 */}
+            {/* 安卓系统设置卡片 - 增强版 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -626,31 +725,44 @@ IP地址: ${window.location.hostname || '未知'}`;
                 <i className="fas fa-cog mr-2 text-purple-500"></i>
                 安卓系统设置
               </h2>
-              
-              {/* 环境检测 - 简化展示 */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">WebView环境支持:</span>
-                  <span className={`text-sm font-medium ${isWebView ? 'text-green-500' : 'text-gray-500'}`}>
-                    {isWebView ? '支持' : '不支持'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">浏览器跳转支持:</span>
-                  <span className={`text-sm font-medium ${isAndroid && !isWebView ? 'text-green-500' : 'text-gray-500'}`}>
-                    {isAndroid && !isWebView ? '支持' : '不支持'}
-                  </span>
-                </div>
-              </div>
+               
+               {/* 环境检测 - 详细展示 */}
+               <div className="mb-6 space-y-3">
+                 <div className="flex items-center justify-between">
+                   <span className="text-sm text-gray-600 dark:text-gray-300">设备类型:</span>
+                   <span className={`text-sm font-medium ${isAndroid ? 'text-green-500' : 'text-gray-500'}`}>
+                     {isAndroid ? '安卓设备' : '非安卓设备'}
+                   </span>
+                 </div>
+                 <div className="flex items-center justify-between">
+                   <span className="text-sm text-gray-600 dark:text-gray-300">WebView环境:</span>
+                   <span className={`text-sm font-medium ${isWebView ? 'text-green-500' : 'text-gray-500'}`}>
+                     {isWebView ? '支持' : '不支持'}
+                   </span>
+                 </div>
+                 {isAndroid && (
+                   <div className="flex items-center justify-between">
+                     <span className="text-sm text-gray-600 dark:text-gray-300">设备厂商:</span>
+                     <span className="text-sm font-medium">
+                       {/xiaomi/i.test(navigator.userAgent) ? '小米' : 
+                        /huawei|honor/i.test(navigator.userAgent) ? '华为' : 
+                        /oppo/i.test(navigator.userAgent) ? 'OPPO' : 
+                        /vivo/i.test(navigator.userAgent) ? 'VIVO' : 
+                        /car|automotive/i.test(navigator.userAgent) ? '安卓车机' :
+                        '其他厂商'}
+                     </span>
+                   </div>
+                 )}
+               </div>
 
-              {/* 跳转方案 - 简化展示 */}
+              {/* 跳转方案 - 详细展示 */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium mb-2 text-gray-600 dark:text-gray-300">可用跳转方案:</h3>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">1. WebView Bridge</div>
-                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">2. Intent跳转</div>
-                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">3. 浏览器跳转</div>
-                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">4. 备用方案</div>
+                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">2. 标准Intent</div>
+                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">3. 厂商特定</div>
+                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">4. 浏览器跳转</div>
                 </div>
               </div>
 
@@ -668,7 +780,7 @@ IP地址: ${window.location.hostname || '未知'}`;
                 {isLoading ? (
                   <>
                     <i className="fa-solid fa-spinner animate-spin mr-2"></i>
-                    {isAndroid ? '正在跳转...' : '检测设备...'}
+                    {isAndroid ? '正在尝试跳转...' : '检测设备...'}
                   </>
                 ) : (
                   <>
