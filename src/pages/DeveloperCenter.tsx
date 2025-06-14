@@ -350,7 +350,7 @@ export default function DeveloperCenter() {
           const ua = navigator.userAgent.toLowerCase();
           // 小米设备
           if (/xiaomi/i.test(ua)) {
-            window.location.href = 'intent:#Intent;action=miui.intent.action.SYSTEM_SETTINGS;end';
+            window.location.href = 'intent:#Intent;action=miui.intent.action.SETTINGS;end';
             return true;
           }
           // 华为设备
@@ -384,13 +384,27 @@ export default function DeveloperCenter() {
     ];
 
     try {
+      // 显示开始跳转提示
+      const toastId = toast.loading('正在准备跳转系统设置...', {
+        description: '将尝试多种跳转方案'
+      });
+
       // 按顺序尝试所有方案
       for (const scheme of jumpSchemes) {
         try {
-          toast.info(`正在尝试方案: ${scheme.name}`);
+          // 更新toast显示当前尝试的方案
+          toast.loading(`正在尝试方案 ${scheme.name}...`, {
+            id: toastId,
+            description: '请稍候...'
+          });
+
           const success = await new Promise<boolean>((resolve) => {
             const executed = scheme.execute();
             if (!executed) {
+              toast.warning(`跳过方案: ${scheme.name}`, {
+                description: '当前环境不支持此方案',
+                id: toastId
+              });
               resolve(false);
               return;
             }
@@ -402,11 +416,24 @@ export default function DeveloperCenter() {
           });
 
           if (success) {
+            toast.success(`跳转成功!`, {
+              description: `使用方案: ${scheme.name}`,
+              id: toastId
+            });
             setIsLoading(false);
             return; // 跳转成功，结束函数
+          } else {
+            toast.warning(`方案 ${scheme.name} 失败`, {
+              description: '将尝试下一个方案',
+              id: toastId
+            });
           }
         } catch (e) {
           console.log(`${scheme.name}方案失败:`, e);
+          toast.error(`方案 ${scheme.name} 出错`, {
+            description: e instanceof Error ? e.message : '未知错误',
+            id: toastId
+          });
           continue; // 当前方案失败，继续尝试下一个
         }
       }
@@ -415,6 +442,7 @@ export default function DeveloperCenter() {
       toast.error('无法自动打开系统设置', {
         description: '已尝试所有可用方案。请尝试以下方法:\n1. 手动打开设置应用\n2. 检查应用权限设置\n3. 联系设备厂商获取支持',
         duration: 10000,
+        id: toastId,
         action: {
           label: '复制错误信息',
           onClick: () => navigator.clipboard.writeText(`设备信息: ${navigator.userAgent}\n跳转失败时间: ${new Date().toLocaleString()}`)
