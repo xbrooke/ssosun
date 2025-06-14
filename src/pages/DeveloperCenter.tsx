@@ -373,40 +373,97 @@ export default function DeveloperCenter() {
             return;
           }
           
-          // VIVO设备
+           // VIVO设备 - 增强跳转方案
           if (/vivo/i.test(navigator.userAgent)) {
-            window.location.href = 'intent:#Intent;action=com.vivo.safe.settings.MoreSettingsActivity;end';
-            setTimeout(() => {
-              if (!document.hidden) {
-                toast('正在尝试VIVO设备专用跳转方式');
-              }
-              setIsLoading(false);
-            }, 1500);
-            return;
+            // 方案1: 尝试VIVO安全中心
+            try {
+              window.location.href = 'intent:#Intent;action=com.vivo.safe.settings.MoreSettingsActivity;end';
+              setTimeout(() => {
+                if (!document.hidden) {
+                  toast('正在尝试VIVO安全中心跳转');
+                }
+                setIsLoading(false);
+              }, 1500);
+              return;
+            } catch (e) {
+              console.log('VIVO安全中心跳转失败:', e);
+            }
+            
+            // 方案2: 尝试VIVO通用设置
+            try {
+              window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;S.android.intent.extra.SETTINGS_EMBEDDED_DEEP_LINK_HOTWORD=com.android.settings;end';
+              setTimeout(() => {
+                if (!document.hidden) {
+                  toast('正在尝试VIVO通用设置跳转');
+                }
+                setIsLoading(false);
+              }, 1500);
+              return;
+            } catch (e) {
+              console.log('VIVO通用设置跳转失败:', e);
+            }
           }
           
-          // OPPO设备
+           // OPPO设备 - 增强跳转方案
           if (/oppo/i.test(navigator.userAgent)) {
-            window.location.href = 'intent:#Intent;action=com.coloros.settings.feature.sound.controller.DefaultSoundSettingsActivity;end';
-            setTimeout(() => {
-              if (!document.hidden) {
-                toast('正在尝试OPPO设备专用跳转方式');
-              }
-              setIsLoading(false);
-            }, 1500);
-            return;
+            // 方案1: 尝试ColorOS设置
+            try {
+              window.location.href = 'intent:#Intent;action=com.coloros.settings.feature.sound.controller.DefaultSoundSettingsActivity;end';
+              setTimeout(() => {
+                if (!document.hidden) {
+                  toast('正在尝试ColorOS设置跳转');
+                }
+                setIsLoading(false);
+              }, 1500);
+              return;
+            } catch (e) {
+              console.log('ColorOS设置跳转失败:', e);
+            }
+            
+            // 方案2: 尝试OPPO通用设置
+            try {
+              window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.coloros.settings;end';
+              setTimeout(() => {
+                if (!document.hidden) {
+                  toast('正在尝试OPPO通用设置跳转');
+                }
+                setIsLoading(false);
+              }, 1500);
+              return;
+            } catch (e) {
+              console.log('OPPO通用设置跳转失败:', e);
+            }
           }
           
-          // 安卓车机设备
+           // 安卓车机设备 - 增强跳转方案
           if (/car|automotive/i.test(navigator.userAgent)) {
-            window.location.href = 'intent:#Intent;action=android.settings.CAR_SETTINGS;end';
-            setTimeout(() => {
-              if (!document.hidden) {
-                toast('正在尝试安卓车机专用跳转方式');
-              }
-              setIsLoading(false);
-            }, 1500);
-            return;
+            // 方案1: 标准车机设置
+            try {
+              window.location.href = 'intent:#Intent;action=android.settings.CAR_SETTINGS;end';
+              setTimeout(() => {
+                if (!document.hidden) {
+                  toast('正在尝试标准车机设置跳转');
+                }
+                setIsLoading(false);
+              }, 1500);
+              return;
+            } catch (e) {
+              console.log('标准车机设置跳转失败:', e);
+            }
+            
+            // 方案2: 尝试车机厂商特定设置
+            try {
+              window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.android.car.settings;end';
+              setTimeout(() => {
+                if (!document.hidden) {
+                  toast('正在尝试车机厂商设置跳转');
+                }
+                setIsLoading(false);
+              }, 1500);
+              return;
+            } catch (e) {
+              console.log('车机厂商设置跳转失败:', e);
+            }
           }
         } catch (e) {
           console.log('厂商特定跳转失败:', e);
@@ -423,11 +480,20 @@ export default function DeveloperCenter() {
           return;
         }
 
-        // 所有方案都失败
-        toast.error('无法打开系统设置，请手动打开设置应用');
+         // 所有方案都失败
+        toast.error('无法自动打开系统设置', {
+          description: '请尝试以下方法:\n1. 手动打开设置应用\n2. 检查应用权限设置\n3. 联系设备厂商获取支持',
+          duration: 10000,
+          action: {
+            label: '复制错误信息',
+            onClick: () => navigator.clipboard.writeText(`设备信息: ${navigator.userAgent}\n跳转失败时间: ${new Date().toLocaleString()}`)
+          }
+        });
         setIsLoading(false);
       } else {
-        toast.error('此功能仅在安卓设备上可用');
+        toast.error('此功能仅在安卓设备上可用', {
+          description: '检测到您正在使用非安卓设备或浏览器环境'
+        });
         setIsLoading(false);
       }
     } catch (error) {
