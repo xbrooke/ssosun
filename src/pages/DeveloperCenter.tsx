@@ -115,31 +115,9 @@ export default function DeveloperCenter() {
     console.log('初始化认证状态检查...');
     const authStatus = localStorage.getItem('devAuth') === 'true';
     setIsAuthenticated(authStatus);
-    
-    // 确保路径正确恢复
-    if (authStatus) {
-      console.log('已认证用户，恢复路径状态');
-    } else {
-      console.log('未认证用户，保持当前路径');
-    }
-    
     setInitialized(true);
     console.log(`认证状态初始化完成: ${authStatus}`);
   }, []);
-
-  // 监听路径变化
-  useEffect(() => {
-    const handleRouteChange = () => {
-      if (!isAuthenticated && initialized) {
-        console.log('路径变化时检查认证状态');
-        const authStatus = localStorage.getItem('devAuth') === 'true';
-        setIsAuthenticated(authStatus);
-      }
-    };
-    
-    window.addEventListener('popstate', handleRouteChange);
-    return () => window.removeEventListener('popstate', handleRouteChange);
-  }, [isAuthenticated, initialized]);
 
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();
@@ -205,161 +183,103 @@ export default function DeveloperCenter() {
     setFileManagerLoading(true);
     try {
       if (isAndroid) {
-        // 显示跳转确认弹窗
-        toast.custom((t) => (
-          <div className="bg-white dark:bg-gray-800 rounded-[8px] p-4 shadow-lg max-w-sm">
-            <h3 className="font-medium text-sm mb-2">确认打开文件管理</h3>
-            <div className="mb-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">跳转方式:</p>
-              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">
-                <p className="text-xs break-all">
-                  {isWebView ? 'WebView Bridge' : 'Intent URL'}
-                </p>
-              </div>
-            </div>
-            <div className="mb-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">跳转链接:</p>
-              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">
-                <p className="text-xs break-all">
-                  {isWebView 
-                    ? 'window.AndroidBridge.openFileManager()' 
-                    : 'intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;package=com.android.filemanager;end'}
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  toast.dismiss(t);
+        // 方案1: 优先尝试使用com.android.filemanager包名 (与系统设置相同的方式)
+        try {
+          const intentUri = `intent:#Intent;action=android.intent.action.VIEW;package=com.android.filemanager;end`;
+          window.location.href = intentUri;
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast('如果未跳转，将尝试其他方案');
+            }
+            setFileManagerLoading(false);
+          }, 1500);
+          return;
+        } catch (e) {
+          console.log('使用com.android.filemanager包名跳转失败，尝试其他方案:', e);
+        }
+
+        // 方案2: 尝试WebView Bridge方式 (与系统设置相同)
+        if (isWebView) {
+          try {
+            if (window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
+              window.AndroidBridge.openFileManager();
+              setTimeout(() => {
+                if (!document.hidden) {
+                  toast('如果未跳转，请尝试其他方案');
+                }
+                setFileManagerLoading(false);
+              }, 1500);
+              return;
+            }
+          } catch (e) {
+            console.log('WebView Bridge方式跳转失败:', e);
+          }
+        }
+
+        // 方案3: 浏览器环境下的跳转方案 (与系统设置相同)
+        if (!isWebView) {
+          try {
+            // 检测浏览器跳转支持
+            const canUseWindowOpen = typeof window.open === 'function';
+            const canUseIframe = 'createElement' in document;
+            
+            // 浏览器方式1: 使用window.open
+            if (canUseWindowOpen) {
+              const directResult = window.open('content://com.android.externalstorage.documents/root/primary', '_blank');
+              
+              // 检查是否成功打开
+              if (directResult) {
+                setTimeout(() => {
                   setFileManagerLoading(false);
-                }}
-                className="px-3 py-1 text-xs rounded-[4px] bg-gray-100 dark:bg-gray-700"
-              >
-                取消
-              </button>
-              <button
-                onClick={() => {
-                  toast.dismiss(t);
-                  // 方案1: 优先尝试使用URL Scheme (content://)
-                  try {
-                    const contentUri = 'content://com.android.externalstorage.documents/root/primary';
-                    window.location.href = contentUri;
-                    setTimeout(() => {
-                      if (!document.hidden) {
-                        toast('如果未跳转，将尝试其他方案');
-                      }
-                      setFileManagerLoading(false);
-                    }, 1500);
-                    return;
-                  } catch (e) {
-                    console.log('使用content://跳转失败，尝试其他方案:', e);
-                  }
+                }, 1500);
+                return;
+              }
+            }
 
-                  // 方案2: 尝试使用Intent URL (与系统设置相同的方式)
-                  try {
-                    const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;package=com.android.filemanager;S.browser_fallback_url=https://filemanager.com;end`;
-                    window.location.href = intentUri;
-                    setTimeout(() => {
-                      if (!document.hidden) {
-                        toast('如果未跳转，将尝试其他方案');
-                      }
-                      setFileManagerLoading(false);
-                    }, 1500);
-                    return;
-                  } catch (e) {
-                    console.log('使用Intent URL跳转失败，尝试其他方案:', e);
-                  }
+            // 浏览器方式2: 使用iframe跳转
+            if (canUseIframe) {
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              iframe.src = 'content://com.android.externalstorage.documents/root/primary';
+              document.body.appendChild(iframe);
+              
+              // 浏览器方式3: 尝试Intent方式
+              const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
+              const intentIframe = document.createElement('iframe');
+              intentIframe.style.display = 'none';
+              intentIframe.src = intentUri;
+              document.body.appendChild(intentIframe);
+            }
 
-                  // 方案3: 尝试WebView Bridge方式 (与系统设置相同)
-                  if (isWebView) {
-                    try {
-                      if (window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
-                        window.AndroidBridge.openFileManager();
-                        setTimeout(() => {
-                          if (!document.hidden) {
-                            toast('如果未跳转，请尝试其他方案');
-                          }
-                          setFileManagerLoading(false);
-                        }, 1500);
-                        return;
-                      }
-                    } catch (e) {
-                      console.log('WebView Bridge方式跳转失败:', e);
-                    }
-                  }
+            setTimeout(() => {
+              if (!document.hidden) {
+                toast('如果未跳转，请尝试手动打开文件管理器');
+              }
+              setFileManagerLoading(false);
+            }, 1500);
+            return;
+          } catch (e) {
+            console.log('浏览器跳转方案失败:', e);
+          }
+        }
 
-                  // 方案4: 浏览器环境下的跳转方案 (与系统设置相同)
-                  if (!isWebView) {
-                    try {
-                      // 检测浏览器跳转支持
-                      const canUseWindowOpen = typeof window.open === 'function';
-                      const canUseIframe = 'createElement' in document;
-                      
-                      // 浏览器方式1: 使用window.open
-                      if (canUseWindowOpen) {
-                        const directResult = window.open('content://com.android.externalstorage.documents/root/primary', '_blank');
-                        
-                        // 检查是否成功打开
-                        if (directResult) {
-                          setTimeout(() => {
-                            setFileManagerLoading(false);
-                          }, 1500);
-                          return;
-                        }
-                      }
+        // 方案4: 尝试通用文件URI (备用方案)
+        try {
+          window.open('content://com.android.externalstorage.documents/root/primary');
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast('如果未跳转，请手动打开文件管理器');
+            }
+            setFileManagerLoading(false);
+          }, 1500);
+          return;
+        } catch (e) {
+          console.log('通用文件URI跳转失败:', e);
+        }
 
-                      // 浏览器方式2: 使用iframe跳转
-                      if (canUseIframe) {
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.src = 'content://com.android.externalstorage.documents/root/primary';
-                        document.body.appendChild(iframe);
-                        
-                        // 浏览器方式3: 尝试Intent方式
-                        const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
-                        const intentIframe = document.createElement('iframe');
-                        intentIframe.style.display = 'none';
-                        intentIframe.src = intentUri;
-                        document.body.appendChild(intentIframe);
-                      }
-
-                      setTimeout(() => {
-                        if (!document.hidden) {
-                          toast('如果未跳转，请尝试手动打开文件管理器');
-                        }
-                        setFileManagerLoading(false);
-                      }, 1500);
-                      return;
-                    } catch (e) {
-                      console.log('浏览器跳转方案失败:', e);
-                    }
-                  }
-
-                  // 方案5: 尝试通用文件URI (备用方案)
-                  try {
-                    window.open('content://com.android.externalstorage.documents/root/primary');
-                    setTimeout(() => {
-                      if (!document.hidden) {
-                        toast('如果未跳转，请手动打开文件管理器');
-                      }
-                      setFileManagerLoading(false);
-                    }, 1500);
-                    return;
-                  } catch (e) {
-                    console.log('通用文件URI跳转失败:', e);
-                  }
-
-                  // 所有方案都失败
-                  toast.error('无法打开文件管理，请手动打开文件管理器');
-                  setFileManagerLoading(false);
-                }}
-                className="px-3 py-1 text-xs rounded-[4px] bg-[var(--color-primary)] text-white"
-              >
-                确认
-              </button>
-            </div>
-          </div>
-        ), { duration: 10000 });
+        // 所有方案都失败
+        toast.error('无法打开文件管理，请手动打开文件管理器');
+        setFileManagerLoading(false);
       } else {
         toast.error('此功能仅在安卓设备上可用');
         setFileManagerLoading(false);
@@ -375,70 +295,27 @@ export default function DeveloperCenter() {
     setIsLoading(true);
     try {
       if (isAndroid) {
-        // 显示跳转确认弹窗
-        toast.custom((t) => (
-          <div className="bg-white dark:bg-gray-800 rounded-[8px] p-4 shadow-lg max-w-sm">
-            <h3 className="font-medium text-sm mb-2">确认打开系统设置</h3>
-            <div className="mb-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">跳转方式:</p>
-              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">
-                <p className="text-xs break-all">
-                  {isWebView ? 'WebView Bridge' : 'Intent URL'}
-                </p>
-              </div>
-            </div>
-            <div className="mb-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">跳转链接:</p>
-              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">
-                <p className="text-xs break-all">
-                  {isWebView 
-                    ? 'window.AndroidBridge.openSettings()' 
-                    : 'intent:#Intent;action=android.settings.SETTINGS;end'}
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  toast.dismiss(t);
-                  setIsLoading(false);
-                }}
-                className="px-3 py-1 text-xs rounded-[4px] bg-gray-100 dark:bg-gray-700"
-              >
-                取消
-              </button>
-              <button
-                onClick={() => {
-                  toast.dismiss(t);
-                  if (isWebView && tryWebViewApproach()) {
-                    setTimeout(() => {
-                      if (!document.hidden) {
-                        toast.error('请在WebView配置中添加intent跳转支持');
-                      }
-                      setIsLoading(false);
-                    }, 1500);
-                    return;
-                  }
+        if (isWebView && tryWebViewApproach()) {
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast.error('请在WebView配置中添加intent跳转支持');
+            }
+            setIsLoading(false);
+          }, 1500);
+          return;
+        }
 
-                  if (tryBrowserApproach()) {
-                    setTimeout(() => {
-                      if (!document.hidden) {
-                        toast.error('无法打开系统设置，请确保应用有相应权限');
-                      }
-                      setIsLoading(false);
-                    }, 1500);
-                    return;
-                  }
+        if (tryBrowserApproach()) {
+          setTimeout(() => {
+            if (!document.hidden) {
+              toast.error('无法打开系统设置，请确保应用有相应权限');
+            }
+            setIsLoading(false);
+          }, 1500);
+          return;
+        }
 
-                  throw new Error('所有跳转方案尝试失败');
-                }}
-                className="px-3 py-1 text-xs rounded-[4px] bg-[var(--color-primary)] text-white"
-              >
-                确认
-              </button>
-            </div>
-          </div>
-        ), { duration: 10000 });
+        throw new Error('所有跳转方案尝试失败');
       } else {
         toast.error('此功能仅在安卓设备上可用');
         setIsLoading(false);
@@ -506,26 +383,6 @@ IP地址: ${window.location.hostname || '未知'}`;
             <h2 className="text-2xl font-bold">加载中...</h2>
             <p className="text-gray-600 dark:text-gray-300">
               正在检查认证状态
-            </p>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!initialized) {
-    return (
-      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-        <div className="flex-1 flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-md bg-white dark:bg-gray-800 rounded-[12px] p-8 shadow-lg text-center"
-          >
-            <i className="fas fa-spinner fa-spin text-4xl text-[var(--color-primary)] mb-4"></i>
-            <h2 className="text-2xl font-bold">加载中...</h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              正在检查认证状态和路径
             </p>
           </motion.div>
         </div>
@@ -624,245 +481,324 @@ IP地址: ${window.location.hostname || '未知'}`;
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 系统信息卡片 - 优化版 */}
+            {/* 系统信息卡片 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-[8px] p-4 shadow-sm"
+              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
             >
-              <div className="flex items-center mb-2">
-                <i className="fas fa-desktop text-base mr-2 text-blue-500"></i>
-                <h2 className="text-base font-semibold">系统信息</h2>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">设备类型</p>
-                  <p className="font-medium">{isMobile ? '移动设备' : '桌面设备'}</p>
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <i className="fas fa-desktop mr-2 text-blue-500"></i>
+                系统信息
+              </h2>
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">设备类型</span>
+                  <span className="font-medium">{isMobile ? '移动设备' : '桌面设备'}</span>
                 </div>
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">操作系统</p>
-                  <p className="font-medium">{navigator.platform}</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">操作系统</span>
+                  <span className="font-medium">{navigator.platform}</span>
                 </div>
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">分辨率</p>
-                  <p className="font-medium">{window.screen.width}x{window.screen.height}</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">屏幕分辨率</span>
+                  <span className="font-medium">{window.screen.width}x{window.screen.height}</span>
                 </div>
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">内存</p>
-                  <p className="font-medium">{navigator.deviceMemory || '未知'} GB</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">设备内存</span>
+                  <span className="font-medium">{navigator.deviceMemory || '未知'} GB</span>
                 </div>
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">CPU核心</p>
-                  <p className="font-medium">{navigator.hardwareConcurrency || '未知'}</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">CPU核心数</span>
+                  <span className="font-medium">{navigator.hardwareConcurrency || '未知'}</span>
                 </div>
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">语言</p>
-                  <p className="font-medium">{navigator.language}</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">用户语言</span>
+                  <span className="font-medium">{navigator.language}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600 dark:text-gray-300">当前主题</span>
+                  <span className="font-medium">{theme}</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* 调试信息卡片 - 优化版 */}
+            {/* 调试信息卡片 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="bg-white dark:bg-gray-800 rounded-[8px] p-4 shadow-sm"
+              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
-                  <i className="fas fa-bug text-base mr-2 text-green-500"></i>
-                  <h2 className="text-base font-semibold">调试信息</h2>
-                </div>
-                <div className="flex gap-1">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center">
+                  <i className="fas fa-bug mr-2 text-green-500"></i>
+                  调试信息
+                </h2>
+                <div className="flex gap-2">
                   <motion.button
                     onClick={copyDebugInfo}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="px-2 py-1 rounded-[4px] bg-gray-100 dark:bg-gray-700 text-xs"
+                    className="px-3 py-1.5 rounded-[4px] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium"
                   >
-                    <i className="fa-solid fa-copy mr-1"></i>复制
+                    <i className="fa-solid fa-copy mr-1"></i>
+                    复制
                   </motion.button>
                   <motion.button
                     onClick={exportDebugInfoToFile}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="px-2 py-1 rounded-[4px] bg-[var(--color-primary)] text-white text-xs"
+                    className="px-3 py-1.5 rounded-[4px] bg-[var(--color-primary)] text-white text-sm font-medium"
                   >
-                    <i className="fa-solid fa-download mr-1"></i>导出
+                    <i className="fa-solid fa-download mr-1"></i>
+                    导出
                   </motion.button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400">应用版本</p>
-                  <p className="font-medium">v2.4.0</p>
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">应用版本</span>
+                  <span className="font-medium">v2.4.0</span>
                 </div>
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400">构建时间</p>
-                  <p className="font-medium">2025-06-10</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">构建时间</span>
+                  <span className="font-medium">2025-06-10</span>
                 </div>
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400">IP地址</p>
-                  <p className="font-medium">{window.location.hostname || '未知'}</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">IP地址</span>
+                  <span className="font-medium">{window.location.hostname || '未知'}</span>
                 </div>
-                <div className="py-1">
-                  <p className="text-gray-500 dark:text-gray-400">连接类型</p>
-                  <p className="font-medium">{navigator.connection ? navigator.connection.effectiveType : '未知'}</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">用户代理</span>
+                  <span className="font-medium text-xs">{navigator.userAgent}</span>
                 </div>
-                <div className="col-span-2 py-1">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">用户代理</p>
-                  <p className="font-medium text-xxs break-all">{navigator.userAgent}</p>
+                <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-300">连接类型</span>
+                  <span className="font-medium">{navigator.connection ? navigator.connection.effectiveType : '未知'}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600 dark:text-gray-300">在线状态</span>
+                  <span className="font-medium">{navigator.onLine ? '在线' : '离线'}</span>
                 </div>
               </div>
             </motion.div>
 
 
 
-            {/* 安卓系统设置卡片 - 优化版 */}
+            {/* 安卓系统设置卡片 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white dark:bg-gray-800 rounded-[8px] p-4 shadow-sm"
+              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
             >
-              <div className="flex items-center mb-2">
-                <i className="fas fa-cog text-base mr-2 text-purple-500"></i>
-                <h2 className="text-base font-semibold">安卓系统设置</h2>
-              </div>
-              
-              <div className="space-y-2">
-                <div>
-                  <h3 className="font-medium text-sm mb-1">跳转方案</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                    自动选择最佳跳转方式
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <i className="fas fa-cog mr-2 text-purple-500"></i>
+                安卓系统设置
+              </h2>
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-[8px]">
+                  <h3 className="font-medium mb-2">系统设置跳转方案</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                    支持多种跳转方式，根据设备环境自动选择最佳方案
                   </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400">WebView支持</p>
-                    <p className={`font-medium ${isWebView ? 'text-green-500' : 'text-red-500'}`}>
-                      {isWebView ? '支持' : '不支持'}
-                    </p>
+                  
+                  {/* 检测结果展示 */}
+                  <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-[4px]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">WebView环境支持:</span>
+                      {isWebView ? (
+                        <span className="flex items-center text-green-500">
+                          <i className="fa-solid fa-check-circle mr-1"></i> 支持
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-red-500">
+                          <i className="fa-solid fa-times-circle mr-1"></i> 不支持
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">浏览器跳转支持:</span>
+                      {isAndroid && !isWebView ? (
+                        <span className="flex items-center text-green-500">
+                          <i className="fa-solid fa-check-circle mr-1"></i> 支持
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-red-500">
+                          <i className="fa-solid fa-times-circle mr-1"></i> 不支持
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400">浏览器支持</p>
-                    <p className={`font-medium ${isAndroid && !isWebView ? 'text-green-500' : 'text-red-500'}`}>
-                      {isAndroid && !isWebView ? '支持' : '不支持'}
-                    </p>
-                  </div>
-                </div>
 
-                <motion.button
-                  onClick={openAndroidSettings}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={isLoading || !isAndroid}
-                  className={`w-full px-3 py-1.5 rounded-[4px] text-xs ${
-                    isLoading ? 'bg-gray-300 dark:bg-gray-600' : 
-                    !isAndroid ? 'bg-gray-400 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
-                  } text-white`}
-                >
-                  {isLoading ? (
-                    <>
-                      <i className="fa-solid fa-spinner animate-spin mr-1"></i>
-                      {isAndroid ? '跳转中...' : '检测设备...'}
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-gear mr-1"></i>
-                      {isAndroid ? '打开设置' : '非安卓设备'}
-                    </>
-                  )}
-                </motion.button>
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 mb-4 space-y-2">
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>WebView环境：使用AndroidBridge或Intent跳转</span>
+                    </li>
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>浏览器环境：尝试iframe或android.startActivity</span>
+                    </li>
+                    <li className="flex items-start">
+                      <i className="fa-solid fa-check text-green-500 mr-2 mt-1"></i>
+                      <span>备用方案：提示用户手动打开设置</span>
+                    </li>
+                  </ul>
+                  <motion.button
+                    onClick={openAndroidSettings}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={isLoading || !isAndroid}
+                    className={`w-full px-4 py-2 rounded-[4px] font-medium ${
+                      isLoading ? 'bg-gray-300 dark:bg-gray-600' : 
+                      !isAndroid ? 'bg-gray-400 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
+                    } text-white shadow-sm transition-colors`}
+                  >
+                    {isLoading ? (
+                      <>
+                        <i className="fa-solid fa-spinner animate-spin mr-2"></i>
+                        {isAndroid ? '正在跳转...' : '检测设备...'}
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-gear mr-2"></i>
+                        {isAndroid ? '打开系统设置' : '非安卓设备'}
+                      </>
+                    )}
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
 
-            {/* 文件管理卡片 - 优化版 */}
+            {/* 文件管理卡片 - 重构为与安卓系统设置一致的布局 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-white dark:bg-gray-800 rounded-[8px] p-4 shadow-sm"
+              className="bg-white dark:bg-gray-800 rounded-[16px] p-6 shadow-sm border border-gray-200 dark:border-gray-700"
             >
-              <div className="flex items-center mb-2">
-                <i className="fas fa-folder-open text-base mr-2 text-purple-500"></i>
-                <h2 className="text-base font-semibold">文件管理</h2>
-              </div>
-              
-              <div className="space-y-2">
+              <div className="flex items-center mb-4">
+                <div className="p-3 mr-4 bg-blue-100 dark:bg-blue-900/30 rounded-[12px]">
+                  <i className="fas fa-folder-open text-blue-500 dark:text-blue-300 text-xl"></i>
+                </div>
                 <div>
-                  <h3 className="font-medium text-sm mb-1">跳转方案</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                    多种方式跳转文件管理
+                  <h2 className="text-xl font-semibold">文件管理</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    访问和管理设备上的文件
                   </p>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400">WebView支持</p>
-                    <p className={`font-medium ${isWebView ? 'text-green-500' : 'text-red-500'}`}>
-                      {isWebView ? '支持' : '不支持'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400">浏览器支持</p>
-                    <p className={`font-medium ${isAndroid && !isWebView ? 'text-green-500' : 'text-red-500'}`}>
-                      {isAndroid && !isWebView ? '支持' : '不支持'}
-                    </p>
-                  </div>
-                </div>
-
-                <motion.button
-                  onClick={() => {
-                    toast.custom((t) => (
-                      <div className="bg-white dark:bg-gray-800 rounded-[8px] p-3 shadow-lg">
-                        <h3 className="font-medium text-sm mb-1">确认打开文件管理</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                          即将跳转到系统文件管理应用，是否继续？
-                        </p>
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => toast.dismiss(t)}
-                            className="px-2 py-1 text-xs rounded-[4px] bg-gray-100 dark:bg-gray-700"
-                          >
-                            取消
-                          </button>
-                          <button
-                            onClick={() => {
-                              toast.dismiss(t);
-                              openFileManager();
-                            }}
-                            className="px-2 py-1 text-xs rounded-[4px] bg-[var(--color-primary)] text-white"
-                          >
-                            确认
-                          </button>
-                        </div>
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-[12px]">
+                  <h3 className="font-medium mb-3">跳转方案</h3>
+                  
+                  {/* 环境检测结果 */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-[8px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">WebView环境:</span>
+                        {isWebView ? (
+                          <span className="flex items-center text-green-500 text-sm">
+                            <i className="fa-solid fa-check-circle mr-1"></i> 支持
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-gray-500 text-sm">
+                            <i className="fa-solid fa-times-circle mr-1"></i> 不支持
+                          </span>
+                        )}
                       </div>
-                    ), { duration: 10000 });
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={fileManagerLoading || !isAndroid}
-                  className={`w-full px-3 py-1.5 rounded-[4px] text-xs ${
-                    fileManagerLoading ? 'bg-gray-300 dark:bg-gray-600' : 
-                    !isAndroid ? 'bg-gray-400 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
-                  } text-white`}
-                >
-                  {fileManagerLoading ? (
-                    <>
-                      <i className="fa-solid fa-spinner animate-spin mr-1"></i>
-                      跳转中...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-folder-open mr-1"></i>
-                      {!isAndroid ? '仅安卓支持' : '打开文件管理'}
-                    </>
-                  )}
-                </motion.button>
+                    </div>
+                    <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-[8px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">浏览器跳转:</span>
+                        {isAndroid && !isWebView ? (
+                          <span className="flex items-center text-green-500 text-sm">
+                            <i className="fa-solid fa-check-circle mr-1"></i> 支持
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-gray-500 text-sm">
+                            <i className="fa-solid fa-times-circle mr-1"></i> 不支持
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 跳转方案列表 */}
+                  <ul className="space-y-3 mb-4">
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 mt-1 mr-3 text-blue-500">
+                        <i className="fa-solid fa-1"></i>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">包名跳转</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          使用com.android.filemanager包名直接跳转
+                        </p>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 mt-1 mr-3 text-blue-500">
+                        <i className="fa-solid fa-2"></i>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">WebView Bridge</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          通过AndroidBridge.openFileManager调用
+                        </p>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 mt-1 mr-3 text-blue-500">
+                        <i className="fa-solid fa-3"></i>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Intent跳转</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          使用android.intent.action.VIEW方式
+                        </p>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="flex-shrink-0 mt-1 mr-3 text-blue-500">
+                        <i className="fa-solid fa-4"></i>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">浏览器跳转</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          支持window.open和iframe方式
+                        </p>
+                      </div>
+                    </li>
+                  </ul>
+
+                  <motion.button
+                    onClick={openFileManager}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={fileManagerLoading || !isAndroid}
+                    className={`w-full px-4 py-3 rounded-[12px] font-medium flex items-center justify-center ${
+                      fileManagerLoading ? 'bg-gray-300 dark:bg-gray-600' : 
+                      !isAndroid ? 'bg-gray-400 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
+                    } text-white shadow-sm transition-colors`}
+                  >
+                    {fileManagerLoading ? (
+                      <>
+                        <i className="fa-solid fa-spinner animate-spin mr-2"></i>
+                        正在尝试跳转...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-folder-open mr-2"></i>
+                        {!isAndroid ? '仅支持安卓设备' : '打开文件管理'}
+                      </>
+                    )}
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
 

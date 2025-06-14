@@ -46,7 +46,7 @@ export default function Category() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-             <h1 className="text-2xl font-bold lg:text-3xl">所有应用</h1>
+            <h1 className="text-2xl font-bold lg:text-3xl">所有应用</h1>
             <motion.div 
               className="relative"
               initial={{ opacity: 0, x: 10 }}
