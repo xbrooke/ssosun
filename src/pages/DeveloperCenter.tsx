@@ -317,188 +317,113 @@ export default function DeveloperCenter() {
     }
   };
 
-  const openAndroidSettings = () => {
+  const openAndroidSettings = async () => {
     setIsLoading(true);
-    try {
-      if (isAndroid) {
-        // 方案1: 尝试WebView Bridge方式
-        if (isWebView && tryWebViewApproach()) {
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast('如果未跳转，请尝试其他方案');
-            }
-            setIsLoading(false);
-          }, 1500);
-          return;
-        }
+    
+    if (!isAndroid) {
+      toast.error('此功能仅在安卓设备上可用', {
+        description: '检测到您正在使用非安卓设备或浏览器环境'
+      });
+      setIsLoading(false);
+      return;
+    }
 
-        // 方案2: 尝试标准Intent方式
-        try {
-          const intentUri = 'intent:#Intent;action=android.settings.SETTINGS;end';
-          window.location.href = intentUri;
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast('如果未跳转，请尝试其他方案');
-            }
-            setIsLoading(false);
-          }, 1500);
-          return;
-        } catch (e) {
-          console.log('标准Intent跳转失败:', e);
+    // 定义所有可能的跳转方案
+    const jumpSchemes = [
+      // 1. WebView Bridge方式
+      {
+        name: 'WebView Bridge',
+        execute: () => isWebView && tryWebViewApproach()
+      },
+      // 2. 标准Intent方式
+      {
+        name: '标准Intent',
+        execute: () => {
+          window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;end';
+          return true;
         }
-
-        // 方案3: 尝试厂商特定方式
-        try {
+      },
+      // 3. 厂商特定方式
+      {
+        name: '厂商特定方案',
+        execute: () => {
+          const ua = navigator.userAgent.toLowerCase();
           // 小米设备
-          if (/xiaomi/i.test(navigator.userAgent)) {
+          if (/xiaomi/i.test(ua)) {
             window.location.href = 'intent:#Intent;action=miui.intent.action.SYSTEM_SETTINGS;end';
-            setTimeout(() => {
-              if (!document.hidden) {
-                toast('正在尝试小米设备专用跳转方式');
-              }
-              setIsLoading(false);
-            }, 1500);
-            return;
+            return true;
           }
-          
-           // 华为设备
-          if (/huawei|honor/i.test(navigator.userAgent)) {
+          // 华为设备
+          if (/huawei|honor/i.test(ua)) {
             window.location.href = 'intent:#Intent;action=com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity;end';
+            return true;
+          }
+          // VIVO设备
+          if (/vivo/i.test(ua)) {
+            window.location.href = 'intent:#Intent;action=com.vivo.safe.settings.MoreSettingsActivity;end';
+            return true;
+          }
+          // OPPO设备
+          if (/oppo/i.test(ua)) {
+            window.location.href = 'intent:#Intent;action=com.coloros.settings.feature.sound.controller.DefaultSoundSettingsActivity;end';
+            return true;
+          }
+          // 安卓车机设备
+          if (/car|automotive/i.test(ua)) {
+            window.location.href = 'intent:#Intent;action=android.settings.CAR_SETTINGS;end';
+            return true;
+          }
+          return false;
+        }
+      },
+      // 4. 浏览器跳转方式
+      {
+        name: '浏览器跳转',
+        execute: () => tryBrowserApproach()
+      }
+    ];
+
+    try {
+      // 按顺序尝试所有方案
+      for (const scheme of jumpSchemes) {
+        try {
+          toast.info(`正在尝试方案: ${scheme.name}`);
+          const success = await new Promise<boolean>((resolve) => {
+            const executed = scheme.execute();
+            if (!executed) {
+              resolve(false);
+              return;
+            }
+            
+            // 设置超时检查是否跳转成功
             setTimeout(() => {
-              if (!document.hidden) {
-                toast('正在尝试华为设备专用跳转方式');
-              }
-              setIsLoading(false);
+              resolve(!document.hidden); // 如果页面仍然可见，则认为跳转失败
             }, 1500);
-            return;
-          }
-          
-           // VIVO设备 - 增强跳转方案
-          if (/vivo/i.test(navigator.userAgent)) {
-            // 方案1: 尝试VIVO安全中心
-            try {
-              window.location.href = 'intent:#Intent;action=com.vivo.safe.settings.MoreSettingsActivity;end';
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast('正在尝试VIVO安全中心跳转');
-                }
-                setIsLoading(false);
-              }, 1500);
-              return;
-            } catch (e) {
-              console.log('VIVO安全中心跳转失败:', e);
-            }
-            
-            // 方案2: 尝试VIVO通用设置
-            try {
-              window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.android.settings;S.android.intent.extra.SETTINGS_EMBEDDED_DEEP_LINK_HOTWORD=com.android.settings;end';
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast('正在尝试VIVO通用设置跳转');
-                }
-                setIsLoading(false);
-              }, 1500);
-              return;
-            } catch (e) {
-              console.log('VIVO通用设置跳转失败:', e);
-            }
-          }
-          
-           // OPPO设备 - 增强跳转方案
-          if (/oppo/i.test(navigator.userAgent)) {
-            // 方案1: 尝试ColorOS设置
-            try {
-              window.location.href = 'intent:#Intent;action=com.coloros.settings.feature.sound.controller.DefaultSoundSettingsActivity;end';
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast('正在尝试ColorOS设置跳转');
-                }
-                setIsLoading(false);
-              }, 1500);
-              return;
-            } catch (e) {
-              console.log('ColorOS设置跳转失败:', e);
-            }
-            
-            // 方案2: 尝试OPPO通用设置
-            try {
-              window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.coloros.settings;end';
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast('正在尝试OPPO通用设置跳转');
-                }
-                setIsLoading(false);
-              }, 1500);
-              return;
-            } catch (e) {
-              console.log('OPPO通用设置跳转失败:', e);
-            }
-          }
-          
-           // 安卓车机设备 - 增强跳转方案
-          if (/car|automotive/i.test(navigator.userAgent)) {
-            // 方案1: 标准车机设置
-            try {
-              window.location.href = 'intent:#Intent;action=android.settings.CAR_SETTINGS;end';
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast('正在尝试标准车机设置跳转');
-                }
-                setIsLoading(false);
-              }, 1500);
-              return;
-            } catch (e) {
-              console.log('标准车机设置跳转失败:', e);
-            }
-            
-            // 方案2: 尝试车机厂商特定设置
-            try {
-              window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.android.car.settings;end';
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast('正在尝试车机厂商设置跳转');
-                }
-                setIsLoading(false);
-              }, 1500);
-              return;
-            } catch (e) {
-              console.log('车机厂商设置跳转失败:', e);
-            }
+          });
+
+          if (success) {
+            setIsLoading(false);
+            return; // 跳转成功，结束函数
           }
         } catch (e) {
-          console.log('厂商特定跳转失败:', e);
+          console.log(`${scheme.name}方案失败:`, e);
+          continue; // 当前方案失败，继续尝试下一个
         }
-
-        // 方案4: 浏览器环境下的跳转方案
-        if (tryBrowserApproach()) {
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast('如果未跳转，请尝试手动打开设置');
-            }
-            setIsLoading(false);
-          }, 1500);
-          return;
-        }
-
-         // 所有方案都失败
-        toast.error('无法自动打开系统设置', {
-          description: '请尝试以下方法:\n1. 手动打开设置应用\n2. 检查应用权限设置\n3. 联系设备厂商获取支持',
-          duration: 10000,
-          action: {
-            label: '复制错误信息',
-            onClick: () => navigator.clipboard.writeText(`设备信息: ${navigator.userAgent}\n跳转失败时间: ${new Date().toLocaleString()}`)
-          }
-        });
-        setIsLoading(false);
-      } else {
-        toast.error('此功能仅在安卓设备上可用', {
-          description: '检测到您正在使用非安卓设备或浏览器环境'
-        });
-        setIsLoading(false);
       }
+
+      // 所有方案都失败
+      toast.error('无法自动打开系统设置', {
+        description: '已尝试所有可用方案。请尝试以下方法:\n1. 手动打开设置应用\n2. 检查应用权限设置\n3. 联系设备厂商获取支持',
+        duration: 10000,
+        action: {
+          label: '复制错误信息',
+          onClick: () => navigator.clipboard.writeText(`设备信息: ${navigator.userAgent}\n跳转失败时间: ${new Date().toLocaleString()}`)
+        }
+      });
     } catch (error) {
       console.error('打开系统设置失败:', error);
       toast.error(`打开设置失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
       setIsLoading(false);
     }
   };
