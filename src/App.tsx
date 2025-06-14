@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import DeveloperCenter from "@/pages/DeveloperCenter";
 import Category from "@/pages/Category";
 import AppDetail from "@/pages/AppDetail";
@@ -109,6 +109,7 @@ export default function App() {
             <Route path="/developer" element={<DeveloperCenter />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </AuthContext.Provider>

@@ -105,15 +105,22 @@ export default function Sidebar() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                <motion.h2 
-                  className="mb-6 flex items-center text-xl font-bold md:text-2xl text-[var(--color-text-primary)]"
-                  initial={{ y: -20 }}
-                  animate={{ y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <i className="fa-brands fa-github-alt mr-3 text-[var(--color-primary)]"></i>
-                   徐大兵的工具箱
-                </motion.h2>
+                 <motion.h2 
+                   className="mb-6 flex items-center text-xl font-bold md:text-2xl text-[var(--color-text-primary)]"
+                   initial={{ y: -20 }}
+                   animate={{ y: 0 }}
+                   transition={{ delay: 0.1 }}
+                 >
+                   <img 
+                     src="https://h.xbrooke.cn/img/yg/logo.JPG" 
+                     alt="徐大兵的工具箱logo"
+                     className="w-8 h-8 mr-3 object-contain rounded-[4px]"
+                     onError={(e) => {
+                       e.currentTarget.src = 'https://space.coze.cn/api/coze_space/gen_image?image_size=square&prompt=Default%20app%20icon%2C%20Flyme%20Auto%201.8%20style%2C%20flat%20design%2C%20rounded%20corners%2C%20white%20background&sign=afeefe9dfde8f3987adb6bca042bf797';
+                     }}
+                   />
+                   Web工具箱
+                 </motion.h2>
                  <ul className="space-y-1">
 
                      {menuItems.map((item) => (
