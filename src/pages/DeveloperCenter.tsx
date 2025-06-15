@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -122,10 +122,39 @@ export default function DeveloperCenter() {
     e.preventDefault();
     if (passwords.permanentPasswords.includes(password)) {
       setIsAuthenticated(true);
-      localStorage.setItem('devAuth', 'true');
-      toast.success('密码验证成功');
+      const authData = {
+        timestamp: Date.now(),
+        valid: true
+      };
+      localStorage.setItem('devAuth', JSON.stringify(authData));
+      toast.success('密码验证成功，5分钟内免验证');
     } else {
       toast.error('密码错误，请重试');
+    }
+  };
+
+  // 检查缓存是否有效
+  const checkAuthCache = () => {
+    const authData = localStorage.getItem('devAuth');
+    if (!authData) return false;
+    
+    try {
+      const { timestamp, valid } = JSON.parse(authData);
+      if (!valid) return false;
+      
+      const currentTime = Date.now();
+      const fiveMinutes = 5 * 60 * 1000; // 5分钟毫秒数
+      
+      if (currentTime - timestamp <= fiveMinutes) {
+        setIsAuthenticated(true);
+        return true;
+      }
+      
+      // 缓存过期，清除存储
+      localStorage.removeItem('devAuth');
+      return false;
+    } catch (e) {
+      return false;
     }
   };
 
@@ -140,6 +169,9 @@ export default function DeveloperCenter() {
     setIsAndroid(/android/.test(ua));
     setIsWebView(/webview|micromessenger|weibo|qq/.test(ua));
     
+    // 检查缓存验证
+    checkAuthCache();
+
     // 检测VIVO、OPPO和车机设备
     const isVivo = /vivo/i.test(ua);
     const isOppo = /oppo/i.test(ua);
@@ -206,119 +238,17 @@ export default function DeveloperCenter() {
     }
   };
 
-  const openFileManager = () => {
+  const openFileManager = async () => {
     setFileManagerLoading(true);
-    try {
-      if (isAndroid) {
-        // 方案1: 优先尝试使用com.android.filemanager包名 (与系统设置相同的方式)
-        try {
-          const intentUri = `intent:#Intent;action=android.intent.action.VIEW;package=com.android.filemanager;end`;
-          window.location.href = intentUri;
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast('如果未跳转，将尝试其他方案');
-            }
-            setFileManagerLoading(false);
-          }, 1500);
-          return;
-        } catch (e) {
-          console.log('使用com.android.filemanager包名跳转失败，尝试其他方案:', e);
-        }
-
-        // 方案2: 尝试WebView Bridge方式 (与系统设置相同)
-        if (isWebView) {
-          try {
-            if (window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
-              window.AndroidBridge.openFileManager();
-              setTimeout(() => {
-                if (!document.hidden) {
-                  toast('如果未跳转，请尝试其他方案');
-                }
-                setFileManagerLoading(false);
-              }, 1500);
-              return;
-            }
-          } catch (e) {
-            console.log('WebView Bridge方式跳转失败:', e);
-          }
-        }
-
-        // 方案3: 浏览器环境下的跳转方案 (与系统设置相同)
-        if (!isWebView) {
-          try {
-            // 检测浏览器跳转支持
-            const canUseWindowOpen = typeof window.open === 'function';
-            const canUseIframe = 'createElement' in document;
-            
-            // 浏览器方式1: 使用window.open
-            if (canUseWindowOpen) {
-              const directResult = window.open('content://com.android.externalstorage.documents/root/primary', '_blank');
-              
-              // 检查是否成功打开
-              if (directResult) {
-                setTimeout(() => {
-                  setFileManagerLoading(false);
-                }, 1500);
-                return;
-              }
-            }
-
-            // 浏览器方式2: 使用iframe跳转
-            if (canUseIframe) {
-              const iframe = document.createElement('iframe');
-              iframe.style.display = 'none';
-              iframe.src = 'content://com.android.externalstorage.documents/root/primary';
-              document.body.appendChild(iframe);
-              
-              // 浏览器方式3: 尝试Intent方式
-              const intentUri = `intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end`;
-              const intentIframe = document.createElement('iframe');
-              intentIframe.style.display = 'none';
-              intentIframe.src = intentUri;
-              document.body.appendChild(intentIframe);
-            }
-
-            setTimeout(() => {
-              if (!document.hidden) {
-                toast('如果未跳转，请尝试手动打开文件管理器');
-              }
-              setFileManagerLoading(false);
-            }, 1500);
-            return;
-          } catch (e) {
-            console.log('浏览器跳转方案失败:', e);
-          }
-        }
-
-        // 方案4: 尝试通用文件URI (备用方案)
-        try {
-          window.open('content://com.android.externalstorage.documents/root/primary');
-          setTimeout(() => {
-            if (!document.hidden) {
-              toast('如果未跳转，请手动打开文件管理器');
-            }
-            setFileManagerLoading(false);
-          }, 1500);
-          return;
-        } catch (e) {
-          console.log('通用文件URI跳转失败:', e);
-        }
-
-        // 所有方案都失败
-        toast.error('无法打开文件管理，请手动打开文件管理器');
-        setFileManagerLoading(false);
-      } else {
-        toast.error('此功能仅在安卓设备上可用');
-        setFileManagerLoading(false);
-      }
-    } catch (error) {
-      console.error('打开文件管理失败:', error);
-      toast.error(`打开文件管理失败: ${error instanceof Error ? error.message : '未知错误'}`);
-      setFileManagerLoading(false);
-    }
+    setCurrentSchemes(fileManagerSchemes);
+    setCurrentSchemeIndex(0);
+    setSchemeStatus('idle');
+    setIsSchemeModalOpen(true);
+    setFileManagerLoading(false);
   };
 
   const [currentSchemeIndex, setCurrentSchemeIndex] = useState(0);
+  const [currentSchemes, setCurrentSchemes] = useState<typeof jumpSchemes>([]);
   const [isSchemeModalOpen, setIsSchemeModalOpen] = useState(false);
   const [schemeStatus, setSchemeStatus] = useState<'idle' | 'trying' | 'success' | 'failed'>('idle');
 
@@ -328,6 +258,15 @@ export default function DeveloperCenter() {
       description: '通过WebView原生桥接方式跳转',
       execute: () => tryWebViewApproach(),
       icon: 'fa-brands fa-android'
+    },
+    {
+      name: '领克车机设置',
+      description: '跳转至领克车机设置界面',
+      execute: () => {
+        window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.geely.settings;end';
+        return true;
+      },
+      icon: 'fa-solid fa-car'
     },
     {
       name: '标准Intent',
@@ -363,6 +302,64 @@ export default function DeveloperCenter() {
       name: '浏览器跳转',
       description: '通过浏览器兼容方式跳转',
       execute: () => tryBrowserApproach(),
+      icon: 'fa-solid fa-globe'
+    }
+  ];
+
+  const fileManagerSchemes = [
+    {
+      name: 'WebView Bridge',
+      description: '通过WebView原生桥接方式跳转',
+      execute: () => {
+        if (window.AndroidBridge && typeof window.AndroidBridge.openFileManager === 'function') {
+          window.AndroidBridge.openFileManager();
+          return true;
+        }
+        return false;
+      },
+      icon: 'fa-brands fa-android'
+    },
+    {
+      name: '标准Intent',
+      description: '使用Android标准Intent跳转',
+      execute: () => {
+        window.location.href = 'intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end';
+        return true;
+      },
+      icon: 'fa-solid fa-mobile-screen'
+    },
+    {
+      name: '厂商特定方案',
+      description: '尝试VIVO/OPPO等厂商特定跳转方式',
+      execute: () => {
+        const ua = navigator.userAgent.toLowerCase();
+        if (/vivo/i.test(ua)) {
+          window.location.href = 'intent:#Intent;action=com.vivo.filemanager;end';
+          return true;
+        }
+        if (/oppo/i.test(ua)) {
+          window.location.href = 'intent:#Intent;action=com.coloros.filemanager;end';
+          return true;
+        }
+        if (/car|automotive/i.test(ua)) {
+          window.location.href = 'intent:#Intent;action=android.intent.action.VIEW;package=com.android.documentsui;end';
+          return true;
+        }
+        return false;
+      },
+      icon: 'fa-solid fa-mobile-screen-button'
+    },
+    {
+      name: '浏览器跳转',
+      description: '通过浏览器兼容方式跳转',
+      execute: () => {
+        try {
+          window.open('content://com.android.externalstorage.documents/root/primary', '_blank');
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
       icon: 'fa-solid fa-globe'
     }
   ];
@@ -419,6 +416,8 @@ export default function DeveloperCenter() {
     setIsLoading(false);
   };
 
+  const [isAutoMode, setIsAutoMode] = useState(true);
+
   const SchemeModal = () => (
     <AnimatePresence>
       {isSchemeModalOpen && (
@@ -433,90 +432,152 @@ export default function DeveloperCenter() {
             animate={{ scale: 1, y: 0 }}
             className="bg-white dark:bg-gray-800 rounded-[12px] p-6 w-full max-w-md"
           >
-            <h3 className="text-xl font-bold mb-4 flex items-center">
-              <i className="fas fa-cog mr-2 text-[var(--color-primary)]"></i>
-              正在尝试打开系统设置
-            </h3>
-            
-            <div className="space-y-4 mb-6">
-              {jumpSchemes.map((scheme, index) => (
-                <div key={scheme.name} className={`p-4 rounded-[8px] border ${
-                  index === currentSchemeIndex 
-                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-lightest)] dark:bg-gray-700'
-                    : 'border-gray-200 dark:border-gray-700'
-                }`}>
-                  <div className="flex items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
-                      index < currentSchemeIndex 
-                        ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300'
-                        : index === currentSchemeIndex
-                        ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
-                    }`}>
-                      {index < currentSchemeIndex ? (
-                        <i className="fa-solid fa-check"></i>
-                      ) : (
-                        <i className={`fa-solid ${scheme.icon}`}></i>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium">{scheme.name}</h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{scheme.description}</p>
-                    </div>
-                    {index === currentSchemeIndex && (
-                      <div className="ml-4">
-                        {schemeStatus === 'idle' && (
-                          <span className="text-sm text-gray-500 dark:text-gray-400">等待尝试</span>
-                        )}
-                        {schemeStatus === 'trying' && (
-                          <span className="text-sm text-yellow-500">
-                            <i className="fa-solid fa-spinner animate-spin mr-1"></i>
-                            尝试中...
-                          </span>
-                        )}
-                        {schemeStatus === 'success' && (
-                          <span className="text-sm text-green-500">
-                            <i className="fa-solid fa-check mr-1"></i>
-                            成功
-                          </span>
-                        )}
-                        {schemeStatus === 'failed' && (
-                          <span className="text-sm text-red-500">
-                            <i className="fa-solid fa-xmark mr-1"></i>
-                            失败
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold flex items-center">
+                <i className="fas fa-cog mr-2 text-[var(--color-primary)]"></i>
+                打开系统设置
+              </h3>
+              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-[4px] p-1">
+                <button
+                  onClick={() => setIsAutoMode(true)}
+                  className={`px-3 py-1 text-sm rounded-[4px] ${isAutoMode ? 'bg-[var(--color-primary)] text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                >
+                  自动模式
+                </button>
+                <button
+                  onClick={() => setIsAutoMode(false)}
+                  className={`px-3 py-1 text-sm rounded-[4px] ${!isAutoMode ? 'bg-[var(--color-primary)] text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                >
+                  手动模式
+                </button>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3">
-              {schemeStatus === 'idle' && (
+            {isAutoMode ? (
+              <>
+                <div className="space-y-4 mb-6">
+                  {jumpSchemes.map((scheme, index) => (
+                    <div key={scheme.name} className={`p-4 rounded-[8px] border ${
+                      index === currentSchemeIndex 
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-lightest)] dark:bg-gray-700'
+                        : 'border-gray-200 dark:border-gray-700'
+                    }`}>
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
+                          index < currentSchemeIndex 
+                            ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300'
+                            : index === currentSchemeIndex
+                            ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+                        }`}>
+                          {index < currentSchemeIndex ? (
+                            <i className="fa-solid fa-check"></i>
+                          ) : (
+                            <i className={`fa-solid ${scheme.icon}`}></i>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{scheme.name}</h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{scheme.description}</p>
+                        </div>
+                        {index === currentSchemeIndex && (
+                          <div className="ml-4">
+                            {schemeStatus === 'idle' && (
+                              <span className="text-sm text-gray-500 dark:text-gray-400">等待尝试</span>
+                            )}
+                            {schemeStatus === 'trying' && (
+                              <span className="text-sm text-yellow-500">
+                                <i className="fa-solid fa-spinner animate-spin mr-1"></i>
+                                尝试中...
+                              </span>
+                            )}
+                            {schemeStatus === 'success' && (
+                              <span className="text-sm text-green-500">
+                                <i className="fa-solid fa-check mr-1"></i>
+                                成功
+                              </span>
+                            )}
+                            {schemeStatus === 'failed' && (
+                              <span className="text-sm text-red-500">
+                                <i className="fa-solid fa-xmark mr-1"></i>
+                                失败
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  {schemeStatus === 'idle' && (
+                    <button
+                      onClick={executeCurrentScheme}
+                      className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-[4px]"
+                    >
+                      尝试此方案
+                    </button>
+                  )}
+                  {schemeStatus === 'failed' && (
+                    <button
+                      onClick={tryNextScheme}
+                      className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-[4px]"
+                    >
+                      尝试下一个方案
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsSchemeModalOpen(false)}
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-[4px]"
+                  >
+                    取消
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                {jumpSchemes.map((scheme, index) => (
+                  <motion.div
+                    key={scheme.name}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setCurrentSchemeIndex(index);
+                      executeCurrentScheme();
+                    }}
+                    className={`p-4 rounded-[8px] border border-gray-200 dark:border-gray-700 cursor-pointer ${
+                      index === currentSchemeIndex && schemeStatus === 'trying' 
+                        ? 'bg-[var(--color-primary-lightest)] dark:bg-gray-700'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
+                        index < currentSchemeIndex 
+                          ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300'
+                          : 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
+                      }`}>
+                        <i className={`fa-solid ${scheme.icon}`}></i>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium">{scheme.name}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{scheme.description}</p>
+                      </div>
+                      {index === currentSchemeIndex && schemeStatus === 'trying' && (
+                        <i className="fa-solid fa-spinner animate-spin text-[var(--color-primary)]"></i>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
                 <button
-                  onClick={executeCurrentScheme}
-                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-[4px]"
+                  onClick={() => setIsSchemeModalOpen(false)}
+                  className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-[4px] mt-4"
                 >
-                  尝试此方案
+                  取消
                 </button>
-              )}
-              {schemeStatus === 'failed' && (
-                <button
-                  onClick={tryNextScheme}
-                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-[4px]"
-                >
-                  尝试下一个方案
-                </button>
-              )}
-              <button
-                onClick={() => setIsSchemeModalOpen(false)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-[4px]"
-              >
-                取消
-              </button>
-            </div>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
@@ -798,6 +859,107 @@ IP地址: ${window.location.hostname || '未知'}`;
               </div>
             </motion.div>
 
+            {/* 工程模式卡片 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
+            >
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <i className="fas fa-tools mr-2 text-orange-500"></i>
+                工程模式
+              </h2>
+               
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  提供多种方式跳转到车机工程模式界面
+                </p>
+                <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-300">
+                    <i className="fa-solid fa-screwdriver-wrench"></i>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">工程模式</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">com.ecarx.engineeringmodel</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <motion.button
+                  onClick={() => {
+                    window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.ecarx.engineeringmodel;end';
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full px-4 py-2 rounded-[4px] font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white shadow-sm transition-colors"
+                >
+                  <i className="fa-solid fa-screwdriver-wrench mr-2"></i>
+                  直接打开工程模式
+                </motion.button>
+                
+                <motion.button
+                  onClick={() => {
+                    setCurrentSchemes([
+                      {
+                        name: 'WebView Bridge',
+                        description: '通过WebView原生桥接方式跳转',
+                        execute: () => {
+                          if (window.AndroidBridge && typeof window.AndroidBridge.openEngineeringMode === 'function') {
+                            window.AndroidBridge.openEngineeringMode();
+                            return true;
+                          }
+                          return false;
+                        },
+                        icon: 'fa-brands fa-android'
+                      },
+                      {
+                        name: '标准Intent',
+                        description: '使用Android标准Intent跳转',
+                        execute: () => {
+                          window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.ecarx.engineeringmodel;end';
+                          return true;
+                        },
+                        icon: 'fa-solid fa-mobile-screen'
+                      },
+                      {
+                        name: '厂商特定方案',
+                        description: '尝试VIVO/OPPO等厂商特定跳转方式',
+                        execute: () => {
+                          const ua = navigator.userAgent.toLowerCase();
+                          if (/vivo/i.test(ua)) {
+                            window.location.href = 'intent:#Intent;action=com.vivo.safe.settings.MoreSettingsActivity;package=com.ecarx.engineeringmodel;end';
+                            return true;
+                          }
+                          if (/oppo/i.test(ua)) {
+                            window.location.href = 'intent:#Intent;action=com.coloros.settings.feature.sound.controller.DefaultSoundSettingsActivity;package=com.ecarx.engineeringmodel;end';
+                            return true;
+                          }
+                          if (/car|automotive/i.test(ua)) {
+                            window.location.href = 'intent:#Intent;action=android.settings.CAR_SETTINGS;package=com.ecarx.engineeringmodel;end';
+                            return true;
+                          }
+                          return false;
+                        },
+                        icon: 'fa-solid fa-mobile-screen-button'
+                      }
+                    ]);
+                    setCurrentSchemeIndex(0);
+                    setSchemeStatus('idle');
+                    setIsSchemeModalOpen(true);
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full px-4 py-2 rounded-[4px] font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 shadow-sm transition-colors"
+                >
+                  <i className="fa-solid fa-list-check mr-2"></i>
+                  尝试多种跳转方案
+                </motion.button>
+              </div>
+            </motion.div>
+
+            {/* 安卓系统设置卡片 - 弹窗版 */}
 
 
             {/* 安卓系统设置卡片 - 弹窗版 */}
@@ -861,7 +1023,7 @@ IP地址: ${window.location.hostname || '未知'}`;
               <SchemeModal />
             </motion.div>
 
-            {/* 文件管理卡片 - 与安卓系统设置卡片一致的布局 */}
+            {/* 文件管理卡片 - 采用与系统设置完全一致的布局与样式 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -873,30 +1035,38 @@ IP地址: ${window.location.hostname || '未知'}`;
                 文件管理
               </h2>
               
-              {/* 环境检测 - 更简洁的展示 */}
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">WebView环境支持:</span>
-                  <span className={`text-sm font-medium ${isWebView ? 'text-green-500' : 'text-gray-500'}`}>
-                    {isWebView ? '支持' : '不支持'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">浏览器跳转支持:</span>
-                  <span className={`text-sm font-medium ${isAndroid && !isWebView ? 'text-green-500' : 'text-gray-500'}`}>
-                    {isAndroid && !isWebView ? '支持' : '不支持'}
-                  </span>
-                </div>
-              </div>
-
-              {/* 跳转方案 - 简化展示 */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-2 text-gray-600 dark:text-gray-300">可用跳转方案:</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">1. 包名跳转</div>
-                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">2. WebView Bridge</div>
-                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">3. Intent跳转</div>
-                  <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded-[4px]">4. 浏览器跳转</div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  将通过弹窗引导逐步尝试不同跳转方案，优先使用WebView Bridge方式
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
+                      <i className="fa-brands fa-android"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-medium">WebView Bridge</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">优先尝试的跳转方式</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300">
+                      <i className="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-medium">标准Intent</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">标准跳转方式</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
+                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-600 dark:text-green-300">
+                      <i className="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-medium">厂商特定方案</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">VIVO/OPPO等</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -905,10 +1075,9 @@ IP地址: ${window.location.hostname || '未知'}`;
                 onClick={openFileManager}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={fileManagerLoading || !isAndroid}
+                disabled={fileManagerLoading}
                 className={`w-full px-4 py-2 rounded-[4px] font-medium ${
-                  fileManagerLoading ? 'bg-gray-300 dark:bg-gray-600' : 
-                  !isAndroid ? 'bg-gray-400 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
+                  fileManagerLoading ? 'bg-gray-300 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
                 } text-white shadow-sm transition-colors`}
               >
                 {fileManagerLoading ? (
@@ -919,7 +1088,7 @@ IP地址: ${window.location.hostname || '未知'}`;
                 ) : (
                   <>
                     <i className="fa-solid fa-folder-open mr-2"></i>
-                    {!isAndroid ? '仅支持安卓设备' : '打开文件管理'}
+                    打开文件管理
                   </>
                 )}
               </motion.button>
