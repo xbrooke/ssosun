@@ -256,17 +256,14 @@ export default function DeveloperCenter() {
     {
       name: 'WebView Bridge',
       description: '通过WebView原生桥接方式跳转',
-      execute: () => tryWebViewApproach(),
-      icon: 'fa-brands fa-android'
-    },
-    {
-      name: '领克车机设置',
-      description: '跳转至领克车机设置界面',
       execute: () => {
-        window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.geely.settings;end';
-        return true;
+        if (window.AndroidBridge && typeof window.AndroidBridge.openEngineeringMode === 'function') {
+          window.AndroidBridge.openEngineeringMode();
+          return true;
+        }
+        return false;
       },
-      icon: 'fa-solid fa-car'
+      icon: 'fa-brands fa-android'
     },
     {
       name: '标准Intent',
@@ -290,10 +287,10 @@ export default function DeveloperCenter() {
           window.location.href = 'intent:#Intent;action=com.coloros.settings.feature.sound.controller.DefaultSoundSettingsActivity;end';
           return true;
         }
-        if (/car|automotive/i.test(ua)) {
-          window.location.href = 'intent:#Intent;action=android.settings.CAR_SETTINGS;end';
-          return true;
-        }
+                          if (/car|automotive/i.test(ua)) {
+                            window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.geely.settings;end';
+                            return true;
+                          }
         return false;
       },
       icon: 'fa-solid fa-mobile-screen-button'
@@ -887,17 +884,17 @@ IP地址: ${window.location.hostname || '未知'}`;
               </div>
 
               <div className="space-y-3">
-                <motion.button
-                  onClick={() => {
-                    window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.ecarx.engineeringmodel;end';
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full px-4 py-2 rounded-[4px] font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white shadow-sm transition-colors"
-                >
-                  <i className="fa-solid fa-screwdriver-wrench mr-2"></i>
-                  直接打开工程模式
-                </motion.button>
+                 <motion.button
+                   onClick={() => {
+                     window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.ecarx.engineeringmodel;end';
+                   }}
+                   whileHover={{ scale: 1.02 }}
+                   whileTap={{ scale: 0.98 }}
+                   className="w-full px-4 py-2 rounded-[4px] font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white shadow-sm transition-colors"
+                 >
+                   <i className="fa-solid fa-screwdriver-wrench mr-2"></i>
+                   直接打开工程模式
+                 </motion.button>
                 
                 <motion.button
                   onClick={() => {
@@ -937,12 +934,25 @@ IP地址: ${window.location.hostname || '未知'}`;
                             return true;
                           }
                           if (/car|automotive/i.test(ua)) {
-                            window.location.href = 'intent:#Intent;action=android.settings.CAR_SETTINGS;package=com.ecarx.engineeringmodel;end';
+                            window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.geely.settings;end';
                             return true;
                           }
                           return false;
                         },
                         icon: 'fa-solid fa-mobile-screen-button'
+                      },
+                      {
+                        name: '浏览器跳转',
+                        description: '通过浏览器兼容方式跳转',
+                        execute: () => {
+                          try {
+                            window.open('intent:#Intent;action=android.settings.SETTINGS;package=com.ecarx.engineeringmodel;end', '_blank');
+                            return true;
+                          } catch (e) {
+                            return false;
+                          }
+                        },
+                        icon: 'fa-solid fa-globe'
                       }
                     ]);
                     setCurrentSchemeIndex(0);
@@ -1006,92 +1016,101 @@ IP地址: ${window.location.hostname || '未知'}`;
                       <p className="text-xs text-gray-500 dark:text-gray-400">VIVO/OPPO/车机等</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
+                    <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-300">
+                      <i className="fa-solid fa-car"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-medium">领克车机设置</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">com.geely.settings</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* 操作按钮 */}
-              <motion.button
-                onClick={openAndroidSettings}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full px-4 py-2 rounded-[4px] font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white shadow-sm transition-colors"
-              >
-                <i className="fa-solid fa-gear mr-2"></i>
-                尝试打开系统设置
-              </motion.button>
+              <div className="space-y-3">
+                <motion.button
+                  onClick={openAndroidSettings}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full px-4 py-2 rounded-[4px] font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white shadow-sm transition-colors"
+                >
+                  <i className="fa-solid fa-gear mr-2"></i>
+                  尝试打开系统设置
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    window.location.href = 'intent:#Intent;action=android.settings.SETTINGS;package=com.geely.settings;end';
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full px-4 py-2 rounded-[4px] font-medium bg-orange-500 hover:bg-orange-600 text-white shadow-sm transition-colors"
+                >
+                  <i className="fa-solid fa-car mr-2"></i>
+                  打开领克车机设置
+                </motion.button>
+              </div>
 
               <SchemeModal />
             </motion.div>
 
-            {/* 文件管理卡片 - 采用与系统设置完全一致的布局与样式 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
-            >
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <i className="fas fa-folder-open mr-2 text-blue-500"></i>
-                文件管理
-              </h2>
-              
-              <div className="mb-6">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                  将通过弹窗引导逐步尝试不同跳转方案，优先使用WebView Bridge方式
-                </p>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
-                      <i className="fa-brands fa-android"></i>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">WebView Bridge</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">优先尝试的跳转方式</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
-                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300">
-                      <i className="fa-solid fa-mobile-screen"></i>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">标准Intent</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">标准跳转方式</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
-                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-600 dark:text-green-300">
-                      <i className="fa-solid fa-mobile-screen-button"></i>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">厂商特定方案</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">VIVO/OPPO等</p>
-                    </div>
-                  </div>
+          {/* 文件管理卡片 */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white dark:bg-gray-800 rounded-[12px] p-6 shadow-sm"
+          >
+            <h2 className="text-xl font-semibold mb-4 flex items-center">
+              <i className="fas fa-folder-open mr-2 text-blue-500"></i>
+              文件管理
+            </h2>
+            
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                提供多种方式跳转到文件管理界面
+              </p>
+              <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-[8px]">
+                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
+                  <i className="fa-solid fa-folder"></i>
+                </div>
+                <div>
+                  <h4 className="font-medium">文件管理</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">android.intent.action.VIEW</p>
                 </div>
               </div>
+            </div>
 
               {/* 操作按钮 - 与系统设置相同样式 */}
-              <motion.button
-                onClick={openFileManager}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                disabled={fileManagerLoading}
-                className={`w-full px-4 py-2 rounded-[4px] font-medium ${
-                  fileManagerLoading ? 'bg-gray-300 dark:bg-gray-600' : 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]'
-                } text-white shadow-sm transition-colors`}
-              >
-                {fileManagerLoading ? (
-                  <>
-                    <i className="fa-solid fa-spinner animate-spin mr-2"></i>
-                    正在尝试跳转...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-folder-open mr-2"></i>
-                    打开文件管理
-                  </>
-                )}
-              </motion.button>
+              <div className="space-y-3">
+                <motion.button
+                  onClick={() => {
+                    window.location.href = 'intent:#Intent;action=android.intent.action.VIEW;type=resource/folder;end';
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full px-4 py-2 rounded-[4px] font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white shadow-sm transition-colors"
+                >
+                  <i className="fa-solid fa-folder-open mr-2"></i>
+                  直接打开文件管理
+                </motion.button>
+                
+                <motion.button
+                  onClick={() => {
+                    setCurrentSchemes(fileManagerSchemes);
+                    setCurrentSchemeIndex(0);
+                    setSchemeStatus('idle');
+                    setIsSchemeModalOpen(true);
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full px-4 py-2 rounded-[4px] font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 shadow-sm transition-colors"
+                >
+                  <i className="fa-solid fa-list-check mr-2"></i>
+                  尝试多种跳转方案
+                </motion.button>
+              </div>
             </motion.div>
 
 
